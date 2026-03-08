@@ -7,12 +7,18 @@ import UniformTypeIdentifiers
 class PickerNavState: ObservableObject {
     @Published var selectedIndex: Int = 0
     var scrollOnChange = false  // only scroll for keyboard nav, not mouse hover
+
+    // Triggers from PickerWindow keyboard handler
+    @Published var selectAllTrigger = false
+    @Published var pasteSelectedTrigger = false
+    @Published var deselectAllTrigger = false
 }
 
 struct PickerView: View {
     @ObservedObject private var manager = ClipboardManager.shared
     @ObservedObject var navState: PickerNavState
     var onSelect: (ClipboardItem) -> Void
+    var onPasteMultiple: (([ClipboardItem]) -> Void)? = nil
     var onDismiss: () -> Void
     var onOpenSettings: (() -> Void)? = nil
 
@@ -20,12 +26,29 @@ struct PickerView: View {
     @State private var appeared = false
     @State private var searchText = ""
     @State private var showSearch = false
+    @State private var selectedIds: Set<UUID> = []
+
+    var isMultiSelectMode: Bool { !selectedIds.isEmpty }
 
     var filteredItems: [ClipboardItem] {
         if searchText.isEmpty { return manager.items }
         return manager.items.filter {
             $0.isImage ? "image".localizedCaseInsensitiveContains(searchText) :
             $0.preview.localizedCaseInsensitiveContains(searchText)
+        }
+    }
+
+    var selectedItems: [ClipboardItem] {
+        filteredItems.filter { selectedIds.contains($0.id) }
+    }
+
+    func toggleSelection(_ id: UUID) {
+        withAnimation(.easeInOut(duration: 0.15)) {
+            if selectedIds.contains(id) {
+                selectedIds.remove(id)
+            } else {
+                selectedIds.insert(id)
+            }
         }
     }
 
@@ -174,10 +197,22 @@ struct PickerView: View {
                                     item: item,
                                     index: index,
                                     isHighlighted: hoveredId == item.id || (navState.selectedIndex == index && hoveredId == nil),
+                                    isSelected: selectedIds.contains(item.id),
+                                    isMultiSelectMode: isMultiSelectMode,
                                     isPinned: !item.isImage && manager.isPinned(content: item.content),
-                                    onSelect: { onSelect(item) },
+                                    onSelect: {
+                                        if isMultiSelectMode {
+                                            toggleSelection(item.id)
+                                        } else {
+                                            onSelect(item)
+                                        }
+                                    },
+                                    onToggleSelect: {
+                                        toggleSelection(item.id)
+                                    },
                                     onDelete: {
                                         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                            selectedIds.remove(item.id)
                                             manager.remove(item: item)
                                         }
                                     },
@@ -228,18 +263,62 @@ struct PickerView: View {
                     }
                 }
 
-                // Footer hint
-                HStack(spacing: 12) {
-                    footerHint(icon: "arrow.up.arrow.down", text: "Navigate")
-                    footerHint(icon: "return", text: "Paste")
-                    footerHint(icon: "number", text: "1-9 Quick")
-                    Spacer()
-                    Text("\(manager.items.count) item\(manager.items.count == 1 ? "" : "s")")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
+                // Footer — switches between normal hints and multi-select bar
+                if isMultiSelectMode {
+                    // Multi-select footer
+                    HStack(spacing: 10) {
+                        Text("\(selectedIds.count) selected")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.secondary)
+
+                        Spacer()
+
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                selectedIds.removeAll()
+                            }
+                        }) {
+                            Text("Deselect All")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(.quaternary, in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+
+                        Button(action: {
+                            let items = selectedItems
+                            selectedIds.removeAll()
+                            onPasteMultiple?(items)
+                        }) {
+                            Label("Paste \(selectedIds.count) item\(selectedIds.count == 1 ? "" : "s")", systemImage: "doc.on.clipboard")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 5)
+                                .background(Color.accentColor, in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .transition(.opacity)
+                } else {
+                    // Normal footer hints
+                    HStack(spacing: 12) {
+                        footerHint(icon: "arrow.up.arrow.down", text: "Navigate")
+                        footerHint(icon: "return", text: "Paste")
+                        footerHint(icon: "command", text: "Click Multi")
+                        Spacer()
+                        Text("\(manager.items.count) item\(manager.items.count == 1 ? "" : "s")")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .transition(.opacity)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -250,6 +329,25 @@ struct PickerView: View {
         }
         .onChange(of: searchText) { _ in
             navState.selectedIndex = 0
+        }
+        // Keyboard triggers from PickerWindow
+        .onChange(of: navState.selectAllTrigger) { _ in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                for item in filteredItems {
+                    selectedIds.insert(item.id)
+                }
+            }
+        }
+        .onChange(of: navState.deselectAllTrigger) { _ in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                selectedIds.removeAll()
+            }
+        }
+        .onChange(of: navState.pasteSelectedTrigger) { _ in
+            guard isMultiSelectMode else { return }
+            let items = selectedItems
+            selectedIds.removeAll()
+            onPasteMultiple?(items)
         }
     }
 
@@ -269,8 +367,11 @@ struct ClipboardItemRow: View {
     let item: ClipboardItem
     let index: Int
     let isHighlighted: Bool
+    let isSelected: Bool
+    let isMultiSelectMode: Bool
     let isPinned: Bool
     var onSelect: () -> Void
+    var onToggleSelect: () -> Void
     var onDelete: () -> Void
     var onPin: () -> Void
 
@@ -278,19 +379,30 @@ struct ClipboardItemRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            // Index badge
+            // Selection checkbox / Index badge
             ZStack {
-                Circle()
-                    .fill(index == 0 ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.08))
-                    .frame(width: 26, height: 26)
-                if item.isImage {
-                    Image(systemName: "photo")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(index == 0 ? .accentColor : .secondary)
+                if isSelected {
+                    // Selected checkmark
+                    Circle()
+                        .fill(Color.accentColor)
+                        .frame(width: 26, height: 26)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.white)
                 } else {
-                    Text(index < 9 ? "\(index + 1)" : "\u{2022}")
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundColor(index == 0 ? .accentColor : .secondary)
+                    // Normal index badge
+                    Circle()
+                        .fill(index == 0 ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.08))
+                        .frame(width: 26, height: 26)
+                    if item.isImage {
+                        Image(systemName: "photo")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(index == 0 ? .accentColor : .secondary)
+                    } else {
+                        Text(index < 9 ? "\(index + 1)" : "\u{2022}")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundColor(index == 0 ? .accentColor : .secondary)
+                    }
                 }
             }
 
@@ -381,26 +493,37 @@ struct ClipboardItemRow: View {
                     .highPriorityGesture(TapGesture().onEnded { onDelete() })
             }
             .padding(.trailing, 4)
-            .opacity(isHighlighted ? 1.0 : 0.3)
+            .opacity(isHighlighted || isSelected ? 1.0 : 0.3)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, item.isImage ? 10 : 9)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(isHighlighted
-                    ? (index == 0 ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.07))
-                    : Color.clear
+                .fill(
+                    isSelected
+                        ? Color.accentColor.opacity(0.15)
+                        : (isHighlighted
+                            ? (index == 0 ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.07))
+                            : Color.clear)
                 )
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(
-                    isHighlighted ? Color.accentColor.opacity(0.2) : Color.clear,
-                    lineWidth: 1
+                    isSelected ? Color.accentColor.opacity(0.5) :
+                    (isHighlighted ? Color.accentColor.opacity(0.2) : Color.clear),
+                    lineWidth: isSelected ? 1.5 : 1
                 )
         )
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .onTapGesture { onSelect() }
+        .onTapGesture {
+            // Check if Command key is held
+            if NSEvent.modifierFlags.contains(.command) {
+                onToggleSelect()
+            } else {
+                onSelect()
+            }
+        }
         .onDrag {
             if item.isImage, let image = item.image, let tiffData = image.tiffRepresentation {
                 return NSItemProvider(item: tiffData as NSData, typeIdentifier: UTType.tiff.identifier)

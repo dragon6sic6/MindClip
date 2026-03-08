@@ -166,8 +166,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 menuEntry.target = self
                 menuEntry.tag = index
                 if !item.isImage {
+                    let fullText = String(item.textContent.prefix(500))
                     if let source = item.sourceApp {
-                        menuEntry.toolTip = "\(source) · \(item.textContent.prefix(200))"
+                        menuEntry.toolTip = "\(source)\n\n\(fullText)"
+                    } else {
+                        menuEntry.toolTip = fullText
                     }
                 }
                 historySubmenu.addItem(menuEntry)

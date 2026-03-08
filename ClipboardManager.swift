@@ -287,6 +287,59 @@ class ClipboardManager: ObservableObject {
         lastChangeCount = NSPasteboard.general.changeCount
     }
 
+    func pasteMultiple(items: [ClipboardItem]) {
+        let pb = NSPasteboard.general
+        pb.clearContents()
+
+        let textItems = items.filter { !$0.isImage }
+        let imageItems = items.filter { $0.isImage }
+
+        if !textItems.isEmpty && imageItems.isEmpty {
+            // Text only — join with newlines
+            let combined = textItems.map { $0.content }.joined(separator: "\n")
+            pb.setString(combined, forType: .string)
+        } else if textItems.isEmpty && !imageItems.isEmpty {
+            // Images only — write image(s)
+            var objects: [NSPasteboardWriting] = []
+            for item in imageItems {
+                if let img = item.image { objects.append(img) }
+            }
+            pb.writeObjects(objects)
+        } else {
+            // Mixed text + images — build HTML with embedded base64 images
+            var html = "<html><body>"
+            for item in items {
+                if item.isImage, let image = item.image,
+                   let tiffData = image.tiffRepresentation,
+                   let bitmapRep = NSBitmapImageRep(data: tiffData),
+                   let pngData = bitmapRep.representation(using: .png, properties: [:]) {
+                    let base64 = pngData.base64EncodedString()
+                    let w = Int(image.size.width)
+                    let h = Int(image.size.height)
+                    html += "<img src=\"data:image/png;base64,\(base64)\" width=\"\(w)\" height=\"\(h)\" /><br>"
+                } else if !item.isImage {
+                    let escaped = item.content
+                        .replacingOccurrences(of: "&", with: "&amp;")
+                        .replacingOccurrences(of: "<", with: "&lt;")
+                        .replacingOccurrences(of: ">", with: "&gt;")
+                        .replacingOccurrences(of: "\n", with: "<br>")
+                    html += "<p style=\"margin:0\">\(escaped)</p>"
+                }
+            }
+            html += "</body></html>"
+
+            pb.declareTypes([.html, .string], owner: nil)
+            if let htmlData = html.data(using: .utf8) {
+                pb.setData(htmlData, forType: .html)
+            }
+            // Plain text fallback
+            let plainText = textItems.map { $0.content }.joined(separator: "\n")
+            pb.setString(plainText, forType: .string)
+        }
+
+        lastChangeCount = pb.changeCount
+    }
+
     func stripFormattingFromClipboard() {
         let pb = NSPasteboard.general
         guard let text = pb.string(forType: .string) else { return }

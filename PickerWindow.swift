@@ -38,6 +38,8 @@ class PickerWindow: NSObject {
     private func setupWindow() {
         let pickerView = PickerView(navState: navState, onSelect: { [weak self] item in
             self?.selectItem(item)
+        }, onPasteMultiple: { [weak self] items in
+            self?.selectMultipleItems(items)
         }, onDismiss: { [weak self] in
             self?.dismiss()
         }, onOpenSettings: {
@@ -75,6 +77,8 @@ class PickerWindow: NSObject {
         // Recreate view with fresh state
         let pickerView = PickerView(navState: navState, onSelect: { [weak self] item in
             self?.selectItem(item)
+        }, onPasteMultiple: { [weak self] items in
+            self?.selectMultipleItems(items)
         }, onDismiss: { [weak self] in
             self?.dismiss()
         }, onOpenSettings: {
@@ -123,6 +127,11 @@ class PickerWindow: NSObject {
                     self.dismiss()
                     return nil
                 }
+                // Allow ⌘A in search field
+                if event.type == .keyDown && event.keyCode == 0 && event.modifierFlags.contains(.command) {
+                    // Let ⌘A work as select-all in the text field
+                    return event
+                }
                 return event
             }
 
@@ -136,6 +145,7 @@ class PickerWindow: NSObject {
 
     private func handleLocalKey(_ event: NSEvent) {
         let itemCount = ClipboardManager.shared.items.count
+        let hasCommand = event.modifierFlags.contains(.command)
 
         switch event.keyCode {
         case 53: // Escape
@@ -147,9 +157,19 @@ class PickerWindow: NSObject {
         case 125: // Arrow Down
             navState.scrollOnChange = true
             navState.selectedIndex = min(max(0, itemCount - 1), navState.selectedIndex + 1)
+        case 0: // A key
+            if hasCommand {
+                // ⌘A — select all
+                navState.selectAllTrigger.toggle()
+            }
         case 36: // Enter / Return
-            let idx = navState.selectedIndex
-            DispatchQueue.main.async { [weak self] in self?.selectItemAtIndex(idx) }
+            if hasCommand {
+                // ⌘Enter — paste selected items
+                navState.pasteSelectedTrigger.toggle()
+            } else {
+                let idx = navState.selectedIndex
+                DispatchQueue.main.async { [weak self] in self?.selectItemAtIndex(idx) }
+            }
         default:
             // Number keys 1-9 quick-paste
             if let chars = event.charactersIgnoringModifiers, let num = Int(chars), num >= 1, num <= 9 {
@@ -209,13 +229,43 @@ class PickerWindow: NSObject {
         }
 
         // Show "Copied" toast as visual feedback
-        showCopiedToast()
+        showToast("Copied")
+    }
+
+    private func selectMultipleItems(_ items: [ClipboardItem]) {
+        guard !items.isEmpty else { return }
+        NSLog("MindClip: selectMultipleItems called — \(items.count) items")
+
+        // 1. Copy all to clipboard
+        ClipboardManager.shared.pasteMultiple(items: items)
+
+        // 2. Close window immediately
+        removeClickMonitor()
+        removeKeyMonitor()
+        window?.orderOut(nil)
+        onDismiss?()
+
+        // 3. Reactivate the previous app, then paste into it
+        let appToActivate = previousApp
+        previousApp = nil
+
+        NSLog("MindClip: reactivating \(appToActivate?.localizedName ?? "nil")")
+        appToActivate?.activate(options: .activateIgnoringOtherApps)
+
+        // Give the app time to regain focus, then send Cmd+V
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            NSLog("MindClip: posting synthetic paste")
+            self?.keyboardMonitor?.postSyntheticPaste()
+        }
+
+        // Show toast
+        showToast("Pasted \(items.count) items")
     }
 
     private var toastWindow: NSWindow?
 
-    private func showCopiedToast() {
-        let label = NSTextField(labelWithString: "Copied")
+    private func showToast(_ message: String) {
+        let label = NSTextField(labelWithString: message)
         label.font = .systemFont(ofSize: 14, weight: .medium)
         label.textColor = .white
         label.alignment = .center

@@ -305,7 +305,7 @@ struct SettingsView: View {
 
             Spacer(minLength: 8)
 
-            Text("v1.1.0")
+            Text("v1.2.0")
                 .font(.system(size: 10))
                 .foregroundStyle(.quaternary)
                 .padding(.bottom, 10)
