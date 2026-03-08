@@ -235,6 +235,29 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 14) {
                         cardHeader(icon: "gearshape", title: "General")
 
+                        // Appearance
+                        HStack {
+                            Text("Appearance")
+                                .font(.system(size: 12))
+                            Spacer()
+                            Picker("", selection: Binding(
+                                get: { manager.appearanceMode },
+                                set: {
+                                    manager.appearanceMode = $0
+                                    manager.saveSettings()
+                                    manager.applyAppearance()
+                                }
+                            )) {
+                                ForEach(AppearanceMode.allCases, id: \.self) { mode in
+                                    Text(mode.label).tag(mode)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .frame(width: 180)
+                        }
+
+                        Divider().opacity(0.3)
+
                         HStack {
                             Text("Launch at Login")
                                 .font(.system(size: 12))
@@ -282,7 +305,7 @@ struct SettingsView: View {
 
             Spacer(minLength: 8)
 
-            Text("v1.0.0")
+            Text("v1.1.0")
                 .font(.system(size: 10))
                 .foregroundStyle(.quaternary)
                 .padding(.bottom, 10)

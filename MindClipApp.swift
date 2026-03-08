@@ -1,6 +1,11 @@
 import SwiftUI
 import AppKit
 import ApplicationServices
+import Combine
+
+extension Notification.Name {
+    static let openSettings = Notification.Name("MindClipOpenSettings")
+}
 
 @main
 struct MindClipApp: App {
@@ -23,6 +28,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var welcomeWindow: NSWindow?
     private var historyItems: [NSMenuItem] = []
     private var accessibilityCheckTimer: Timer?
+    private var cancellables = Set<AnyCancellable>()
 
     private var hasCompletedOnboarding: Bool {
         get { UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") }
@@ -34,6 +40,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         clipboardManager = ClipboardManager.shared
         setupMenuBar()
+
+        // Rebuild menu whenever history changes so it's always fresh on click
+        clipboardManager.$menuBarHistory
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.rebuildMenu() }
+            .store(in: &cancellables)
+
+        // Listen for settings open request from picker
+        NotificationCenter.default.addObserver(self, selector: #selector(openSettings), name: .openSettings, object: nil)
 
         if !hasCompletedOnboarding {
             showWelcome()

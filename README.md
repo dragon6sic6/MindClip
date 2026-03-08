@@ -28,6 +28,8 @@ Built by **Mindact**.
 - **Persistent menu bar history** - Long-term history that survives session clears and app restarts
 - **Retention settings** - Keep menu bar history for 7 days, 30 days, 90 days, or forever
 - **Source app labels** - See which app you copied from, with relative timestamps
+- **Appearance mode** - System, Light, or Dark — the picker and settings follow your choice
+- **Quick settings** - Access settings directly from the picker via the gear icon
 - **Launch at login** - Optional auto-start when you log in
 - **Lightweight** - No dock icon, no background noise, just a menu bar icon
 
@@ -68,6 +70,7 @@ Access settings from the menu bar icon > **Settings...** (`⌘,`):
 - **Show in menu** - How many items to display in the History submenu (5-100)
 
 **General**
+- **Appearance** - System, Light, or Dark mode
 - **Launch at Login** - Start MindClip automatically when you log in
 
 ## Architecture

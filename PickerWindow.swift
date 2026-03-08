@@ -40,6 +40,8 @@ class PickerWindow: NSObject {
             self?.selectItem(item)
         }, onDismiss: { [weak self] in
             self?.dismiss()
+        }, onOpenSettings: {
+            NotificationCenter.default.post(name: .openSettings, object: nil)
         })
 
         let hosting = NSHostingView(rootView: pickerView)
@@ -75,6 +77,8 @@ class PickerWindow: NSObject {
             self?.selectItem(item)
         }, onDismiss: { [weak self] in
             self?.dismiss()
+        }, onOpenSettings: {
+            NotificationCenter.default.post(name: .openSettings, object: nil)
         })
         hostingView?.rootView = pickerView
 

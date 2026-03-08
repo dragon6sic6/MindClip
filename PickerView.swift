@@ -14,6 +14,7 @@ struct PickerView: View {
     @ObservedObject var navState: PickerNavState
     var onSelect: (ClipboardItem) -> Void
     var onDismiss: () -> Void
+    var onOpenSettings: (() -> Void)? = nil
 
     @State private var hoveredId: UUID? = nil
     @State private var appeared = false
@@ -48,7 +49,7 @@ struct PickerView: View {
 
                     Text("Clipboard")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
 
                     Spacer()
 
@@ -65,6 +66,18 @@ struct PickerView: View {
                         Image(systemName: showSearch ? "magnifyingglass.circle.fill" : "magnifyingglass.circle")
                             .font(.system(size: 16))
                             .foregroundColor(showSearch ? .accentColor : .secondary)
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+
+                    // Settings button
+                    Button(action: {
+                        onDismiss()
+                        onOpenSettings?()
+                    }) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
                             .contentShape(Circle())
                     }
                     .buttonStyle(.plain)
@@ -223,7 +236,7 @@ struct PickerView: View {
                     Spacer()
                     Text("\(manager.items.count) item\(manager.items.count == 1 ? "" : "s")")
                         .font(.system(size: 10))
-                        .foregroundColor(.white.opacity(0.5))
+                        .foregroundStyle(.tertiary)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
@@ -248,7 +261,7 @@ struct PickerView: View {
             Text(text)
                 .font(.system(size: 10))
         }
-        .foregroundColor(.white.opacity(0.5))
+        .foregroundStyle(.tertiary)
     }
 }
 
@@ -268,16 +281,16 @@ struct ClipboardItemRow: View {
             // Index badge
             ZStack {
                 Circle()
-                    .fill(index == 0 ? Color.accentColor.opacity(0.18) : Color.white.opacity(0.1))
+                    .fill(index == 0 ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.08))
                     .frame(width: 26, height: 26)
                 if item.isImage {
                     Image(systemName: "photo")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(index == 0 ? .accentColor : .white.opacity(0.8))
+                        .foregroundColor(index == 0 ? .accentColor : .secondary)
                 } else {
                     Text(index < 9 ? "\(index + 1)" : "\u{2022}")
                         .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundColor(index == 0 ? .accentColor : .white.opacity(0.8))
+                        .foregroundColor(index == 0 ? .accentColor : .secondary)
                 }
             }
 
@@ -299,20 +312,20 @@ struct ClipboardItemRow: View {
                         if let size = item.imageSize {
                             Text("\(Int(size.width))\u{00D7}\(Int(size.height))")
                                 .font(.system(size: 10, design: .monospaced))
-                                .foregroundColor(.white.opacity(0.5))
+                                .foregroundStyle(.tertiary)
                         }
                         if let source = item.sourceApp {
                             Text("\u{00B7}")
-                                .foregroundColor(.white.opacity(0.3))
+                                .foregroundStyle(.quaternary)
                             Text(source)
                                 .font(.system(size: 10))
                                 .foregroundStyle(.tertiary)
                         }
                         Text("\u{00B7}")
-                            .foregroundColor(.white.opacity(0.3))
+                            .foregroundStyle(.quaternary)
                         Text(ClipboardManager.relativeTime(from: item.timestamp))
                             .font(.system(size: 10))
-                            .foregroundColor(.white.opacity(0.35))
+                            .foregroundStyle(.tertiary)
                     }
                 }
             } else {
@@ -322,7 +335,7 @@ struct ClipboardItemRow: View {
                         .font(.system(size: 13))
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
-                        .foregroundColor(.white.opacity(isHighlighted ? 1.0 : 0.9))
+                        .foregroundColor(.primary)
                         .help(item.content.count > 80 ? String(item.content.prefix(500)) : "")
 
                     HStack(spacing: 4) {
@@ -333,7 +346,7 @@ struct ClipboardItemRow: View {
                         }
                         Text(ClipboardManager.relativeTime(from: item.timestamp))
                             .font(.system(size: 10))
-                            .foregroundColor(.white.opacity(0.35))
+                            .foregroundStyle(.tertiary)
                     }
                 }
             }
@@ -417,7 +430,7 @@ struct PinnedItemRow: View {
             Text(snippet.title)
                 .font(.system(size: 12))
                 .lineLimit(1)
-                .foregroundColor(.white.opacity(0.85))
+                .foregroundColor(.primary.opacity(0.85))
                 .help(snippet.content.count > 50 ? String(snippet.content.prefix(500)) : "")
 
             Spacer()

@@ -1,6 +1,30 @@
 import AppKit
 import Combine
 
+// MARK: - Appearance Mode
+
+enum AppearanceMode: String, CaseIterable {
+    case system = "system"
+    case light = "light"
+    case dark = "dark"
+
+    var label: String {
+        switch self {
+        case .system: return "System"
+        case .light: return "Light"
+        case .dark: return "Dark"
+        }
+    }
+
+    var nsAppearance: NSAppearance? {
+        switch self {
+        case .system: return nil
+        case .light: return NSAppearance(named: .aqua)
+        case .dark: return NSAppearance(named: .darkAqua)
+        }
+    }
+}
+
 // MARK: - Pinned Favorites (persistent across sessions)
 
 struct PinnedSnippet: Identifiable, Codable, Equatable {
@@ -115,12 +139,12 @@ class ClipboardManager: ObservableObject {
     @Published var removeDuplicates: Bool = true
     @Published var menuBarHistory: [PersistentHistoryItem] = []
     @Published var menuBarRetention: MenuBarRetention = .forever
+    @Published var appearanceMode: AppearanceMode = .system
 
     private var lastChangeCount: Int = 0
     private var pollTimer: Timer?
     private var sessionTimer: Timer?
     private var screenshotTimer: Timer?
-    private var lastScreenshotCheck: Date = Date()
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
@@ -151,6 +175,12 @@ class ClipboardManager: ObservableObject {
            let retention = MenuBarRetention(rawValue: retentionStr) {
             menuBarRetention = retention
         }
+
+        if let modeStr = defaults.string(forKey: "appearanceMode"),
+           let mode = AppearanceMode(rawValue: modeStr) {
+            appearanceMode = mode
+        }
+        applyAppearance()
     }
 
     func saveSettings() {
@@ -160,6 +190,11 @@ class ClipboardManager: ObservableObject {
         defaults.set(displayInMenu, forKey: "displayInMenu")
         defaults.set(removeDuplicates, forKey: "removeDuplicates")
         defaults.set(menuBarRetention.rawValue, forKey: "menuBarRetention")
+        defaults.set(appearanceMode.rawValue, forKey: "appearanceMode")
+    }
+
+    func applyAppearance() {
+        NSApp.appearance = appearanceMode.nsAppearance
     }
 
     func startPolling() {
@@ -313,36 +348,73 @@ class ClipboardManager: ObservableObject {
 
     func startScreenshotMonitoring() {
         screenshotTimer?.invalidate()
-        lastScreenshotCheck = Date()
+
+        // Create marker file — `find -newer` will compare against this file's modification time.
+        // Only files NEWER than the marker are returned, so we never scan old files.
+        let marker = screenshotMarkerPath
+        let supportDir = (marker as NSString).deletingLastPathComponent
+        try? FileManager.default.createDirectory(atPath: supportDir, withIntermediateDirectories: true)
+        FileManager.default.createFile(atPath: marker, contents: nil)
+
         let timer = Timer(timeInterval: 3.0, repeats: true) { [weak self] _ in
-            self?.checkForNewScreenshots()
+            DispatchQueue.global(qos: .utility).async {
+                self?.checkForNewScreenshots()
+            }
         }
         RunLoop.main.add(timer, forMode: .common)
         screenshotTimer = timer
     }
 
+    private var screenshotMarkerPath: String {
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        return support.appendingPathComponent("MindClip/.screenshot_marker").path
+    }
+
     private func checkForNewScreenshots() {
         let dir = screenshotSaveLocation()
-        let fm = FileManager.default
+        let marker = screenshotMarkerPath
 
-        guard let files = try? fm.contentsOfDirectory(at: dir,
-                                                       includingPropertiesForKeys: [.creationDateKey],
-                                                       options: [.skipsHiddenFiles]) else { return }
+        guard FileManager.default.fileExists(atPath: marker) else { return }
 
-        let imageExtensions = Set(["png", "jpg", "jpeg", "tiff"])
-        let cutoff = lastScreenshotCheck
+        // `find -newer marker -print0` returns ONLY files newer than the marker.
+        // -print0 uses null-byte separators — handles any filename encoding.
+        let pipe = Pipe()
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/find")
+        process.arguments = [
+            dir.path, "-maxdepth", "1", "-type", "f",
+            "(", "-name", "*.png", "-o", "-name", "*.jpg", "-o", "-name", "*.jpeg", "-o", "-name", "*.tiff", ")",
+            "-newer", marker,
+            "-print0"
+        ]
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
 
-        for file in files {
-            guard imageExtensions.contains(file.pathExtension.lowercased()) else { continue }
-            guard let values = try? file.resourceValues(forKeys: [.creationDateKey]),
-                  let created = values.creationDate,
-                  created > cutoff else { continue }
+        do {
+            try process.run()
+        } catch { return }
 
-            // Only capture very recent files (< 10 sec old) to avoid loading old images
-            let age = Date().timeIntervalSince(created)
-            guard age < 10 else { continue }
+        // CRITICAL: Read pipe data BEFORE waitUntilExit to avoid deadlock.
+        // If find's output fills the pipe buffer (~64KB), waitUntilExit would
+        // block forever waiting for find to finish, while find blocks waiting
+        // for the pipe to drain.
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
 
-            if let image = NSImage(contentsOf: file) {
+        // Update marker so next tick only finds newer files
+        try? FileManager.default.setAttributes(
+            [.modificationDate: Date()],
+            ofItemAtPath: marker
+        )
+
+        guard !data.isEmpty else { return }
+
+        let paths = data.split(separator: 0).compactMap { String(data: Data($0), encoding: .utf8) }
+
+        for path in paths {
+            let fileURL = URL(fileURLWithPath: path)
+
+            if let image = NSImage(contentsOf: fileURL) {
                 let newItem = ClipboardItem(image: image, sourceApp: "Screenshot")
                 DispatchQueue.main.async {
                     // Skip if top item is already same-size image
@@ -357,7 +429,6 @@ class ClipboardManager: ObservableObject {
                 }
             }
         }
-        lastScreenshotCheck = Date()
     }
 
     // MARK: - Relative Time Helper
