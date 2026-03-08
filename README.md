@@ -33,10 +33,12 @@ Built by **Mindact**.
 
 ## Install
 
-1. Download `MindClip.zip` from [Releases](https://github.com/dragon6sic6/MindClip/releases) (or build from source)
-2. Unzip and drag **MindClip.app** to your Applications folder
+1. Download **MindClip.dmg** from [Releases](https://github.com/dragon6sic6/MindClip/releases) (or build from source)
+2. Open the DMG and drag **MindClip.app** to your Applications folder
 3. Open MindClip
 4. Grant **Accessibility** permission when prompted (required for `⌘V` detection)
+
+> Signed and notarized by Apple (Developer ID: Mindact Solutions AB).
 
 > **Note:** macOS requires you to manually enable Accessibility access in **System Settings > Privacy & Security > Accessibility**. Toggle MindClip ON.
 
