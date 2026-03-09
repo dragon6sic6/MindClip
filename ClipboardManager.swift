@@ -401,33 +401,18 @@ class ClipboardManager: ObservableObject {
             }
             pb.writeObjects(objects)
         }
-        // Mixed content with files — write file URLs + text via manual types
-        // (NSURL as NSPasteboardWriting claims .string type with the path,
-        //  which conflicts with actual text items in writeObjects)
+        // Mixed content with files — write file URLs first, then append text type
         else if !fileItems.isEmpty {
-            let fileURLs = fileItems.compactMap { $0.fileURL }
-            let filePaths = fileURLs.map { $0.path }
-
-            // Declare all types we need upfront
-            var types: [NSPasteboard.PasteboardType] = [
-                .fileURL,
-                filenamesPboardType
-            ]
+            let urls = fileItems.compactMap { $0.fileURL as NSURL? }
+            pb.writeObjects(urls)
+            // Legacy filenames for Chrome/web app compatibility
+            let paths = fileItems.compactMap { $0.fileURL?.path }
+            pb.addTypes([filenamesPboardType], owner: nil)
+            pb.setPropertyList(paths, forType: filenamesPboardType)
+            // Append text — addTypes extends existing item without clearing it
             let plainText = textItems.map { $0.content }.joined(separator: "\n")
             if !plainText.isEmpty {
-                types.append(.string)
-            }
-            pb.declareTypes(types, owner: nil)
-
-            // Write file URLs
-            if let first = fileURLs.first {
-                pb.setString(first.absoluteString, forType: .fileURL)
-            }
-            // Legacy filenames for Chrome/web app compatibility
-            pb.setPropertyList(filePaths, forType: filenamesPboardType)
-
-            // Write text separately — won't be overwritten by file URL
-            if !plainText.isEmpty {
+                pb.addTypes([.string], owner: nil)
                 pb.setString(plainText, forType: .string)
             }
         }
