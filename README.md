@@ -14,7 +14,9 @@ Built by **Mindact**.
 
 ## Features
 
-- **Clipboard history** - Remembers up to 200 copied items (text and images) per session
+- **Clipboard history** - Remembers up to 200 copied items (text, images, and files) per session
+- **File support** - Copied files (PDFs, documents, archives, etc.) appear in the picker with native macOS icons
+- **Multi-select paste** - Select multiple items in the picker and paste them together (text + files + images)
 - **Screenshot capture** - Automatically detects new screenshots (⌘⇧4 / ⌘⇧3) and adds them to history
 - **Image support** - Copies of images, screenshots, and photos all appear in the picker with thumbnails
 - **Quick picker** - Hold `⌘V` to browse and select from history
@@ -25,7 +27,7 @@ Built by **Mindact**.
 - **Search** - Toggle search in the picker to filter items
 - **Smart duplicates** - Optionally removes duplicate entries automatically
 - **Session duration** - Picker auto-clears after a set time (15 min to forever)
-- **Persistent menu bar history** - Long-term history that survives session clears and app restarts
+- **Persistent menu bar history** - Long-term history with native file type icons, including screenshots and files
 - **Retention settings** - Keep menu bar history for 7 days, 30 days, 90 days, or forever
 - **Source app labels** - See which app you copied from, with relative timestamps
 - **Appearance mode** - System, Light, or Dark — the picker and settings follow your choice

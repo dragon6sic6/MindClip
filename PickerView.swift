@@ -33,8 +33,14 @@ struct PickerView: View {
     var filteredItems: [ClipboardItem] {
         if searchText.isEmpty { return manager.items }
         return manager.items.filter {
-            $0.isImage ? "image".localizedCaseInsensitiveContains(searchText) :
-            $0.preview.localizedCaseInsensitiveContains(searchText)
+            if $0.isImage {
+                return "image".localizedCaseInsensitiveContains(searchText)
+            } else if $0.isFile {
+                return ($0.fileName ?? "").localizedCaseInsensitiveContains(searchText)
+                    || "file".localizedCaseInsensitiveContains(searchText)
+            } else {
+                return $0.preview.localizedCaseInsensitiveContains(searchText)
+            }
         }
     }
 
@@ -199,7 +205,7 @@ struct PickerView: View {
                                     isHighlighted: hoveredId == item.id || (navState.selectedIndex == index && hoveredId == nil),
                                     isSelected: selectedIds.contains(item.id),
                                     isMultiSelectMode: isMultiSelectMode,
-                                    isPinned: !item.isImage && manager.isPinned(content: item.content),
+                                    isPinned: !item.isImage && !item.isFile && manager.isPinned(content: item.content),
                                     onSelect: {
                                         if isMultiSelectMode {
                                             toggleSelection(item.id)
@@ -394,7 +400,11 @@ struct ClipboardItemRow: View {
                     Circle()
                         .fill(index == 0 ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.08))
                         .frame(width: 26, height: 26)
-                    if item.isImage {
+                    if item.isFile {
+                        Image(systemName: "doc")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(index == 0 ? .accentColor : .secondary)
+                    } else if item.isImage {
                         Image(systemName: "photo")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(index == 0 ? .accentColor : .secondary)
@@ -407,7 +417,38 @@ struct ClipboardItemRow: View {
             }
 
             // Content preview
-            if item.isImage, let thumbnail = item.thumbnail {
+            if item.isFile, let icon = item.fileIcon {
+                // File row
+                HStack(spacing: 10) {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .frame(width: 32, height: 32)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.fileName ?? "Unknown file")
+                            .font(.system(size: 13, weight: .medium))
+                            .lineLimit(1)
+
+                        HStack(spacing: 4) {
+                            if let size = item.fileSize {
+                                Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.tertiary)
+                            }
+                            if let source = item.sourceApp {
+                                Text("\u{00B7}").foregroundStyle(.quaternary)
+                                Text(source)
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.tertiary)
+                            }
+                            Text("\u{00B7}").foregroundStyle(.quaternary)
+                            Text(ClipboardManager.relativeTime(from: item.timestamp))
+                                .font(.system(size: 10))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+            } else if item.isImage, let thumbnail = item.thumbnail {
                 // Image thumbnail
                 VStack(alignment: .leading, spacing: 4) {
                     Image(nsImage: thumbnail)
@@ -468,7 +509,7 @@ struct ClipboardItemRow: View {
             // Action icons (always visible, brighter on hover)
             HStack(spacing: 4) {
                 // Pin / Unpin (text items only)
-                if !item.isImage {
+                if !item.isImage && !item.isFile {
                     Image(systemName: isPinned ? "pin.slash.fill" : "pin.fill")
                         .font(.system(size: 12))
                         .foregroundColor(isPinned ? .accentColor : .secondary)
@@ -496,7 +537,7 @@ struct ClipboardItemRow: View {
             .opacity(isHighlighted || isSelected ? 1.0 : 0.3)
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, item.isImage ? 10 : 9)
+        .padding(.vertical, (item.isImage || item.isFile) ? 10 : 9)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(
@@ -525,7 +566,9 @@ struct ClipboardItemRow: View {
             }
         }
         .onDrag {
-            if item.isImage, let image = item.image, let tiffData = image.tiffRepresentation {
+            if item.isFile, let url = item.fileURL {
+                return NSItemProvider(object: url as NSURL)
+            } else if item.isImage, let image = item.image, let tiffData = image.tiffRepresentation {
                 return NSItemProvider(item: tiffData as NSData, typeIdentifier: UTType.tiff.identifier)
             }
             return NSItemProvider(object: item.content as NSString)

@@ -66,6 +66,10 @@ struct PersistentHistoryItem: Identifiable, Codable, Equatable {
     let sourceApp: String?
     let timestamp: Date
     let isImage: Bool
+    let isFile: Bool
+    let filePath: String?
+    let fileName: String?
+    let fileSize: Int64?
 
     init(from item: ClipboardItem) {
         self.id = item.id
@@ -74,6 +78,25 @@ struct PersistentHistoryItem: Identifiable, Codable, Equatable {
         self.sourceApp = item.sourceApp
         self.timestamp = item.timestamp
         self.isImage = item.isImage
+        self.isFile = item.isFile
+        self.filePath = item.fileURL?.path
+        self.fileName = item.fileName
+        self.fileSize = item.fileSize
+    }
+
+    // Codable: provide defaults for new fields missing from old data
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        textContent = try container.decode(String.self, forKey: .textContent)
+        preview = try container.decode(String.self, forKey: .preview)
+        sourceApp = try container.decodeIfPresent(String.self, forKey: .sourceApp)
+        timestamp = try container.decode(Date.self, forKey: .timestamp)
+        isImage = try container.decode(Bool.self, forKey: .isImage)
+        isFile = try container.decodeIfPresent(Bool.self, forKey: .isFile) ?? false
+        filePath = try container.decodeIfPresent(String.self, forKey: .filePath)
+        fileName = try container.decodeIfPresent(String.self, forKey: .fileName)
+        fileSize = try container.decodeIfPresent(Int64.self, forKey: .fileSize)
     }
 }
 
@@ -89,6 +112,11 @@ struct ClipboardItem: Identifiable, Equatable {
     var image: NSImage?
     var thumbnail: NSImage?
     var imageSize: NSSize?
+    var isFile: Bool = false
+    var fileURL: URL?
+    var fileName: String?
+    var fileSize: Int64?
+    var fileIcon: NSImage?
 
     init(content: String, sourceApp: String? = nil) {
         self.id = UUID()
@@ -121,6 +149,29 @@ struct ClipboardItem: Identifiable, Equatable {
                    operation: .copy, fraction: 1.0)
         thumb.unlockFocus()
         self.thumbnail = thumb
+    }
+
+    init(fileURL: URL, sourceApp: String? = nil) {
+        self.id = UUID()
+        self.isFile = true
+        self.fileURL = fileURL
+        self.fileName = fileURL.lastPathComponent
+        self.content = fileURL.path
+        self.preview = fileURL.lastPathComponent
+        self.timestamp = Date()
+        self.sourceApp = sourceApp
+
+        // Get file size
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: fileURL.path),
+           let size = attrs[.size] as? Int64 {
+            self.fileSize = size
+        }
+
+        // Get file icon from system
+        let icon = NSWorkspace.shared.icon(forFile: fileURL.path)
+        icon.size = NSSize(width: 32, height: 32)
+        self.fileIcon = icon
+        self.thumbnail = icon
     }
 
     static func == (lhs: ClipboardItem, rhs: ClipboardItem) -> Bool {
@@ -215,7 +266,46 @@ class ClipboardManager: ObservableObject {
         let pb = NSPasteboard.general
         let frontApp = NSWorkspace.shared.frontmostApplication?.localizedName
 
-        // Check for image first (tiff is universal, png for screenshots, also check JPEG)
+        // 1. Check for file URLs FIRST — Finder puts both public.file-url AND public.tiff
+        //    (the file icon) on the pasteboard, so we must prioritize file URL detection.
+        if let urls = pb.readObjects(forClasses: [NSURL.self], options: [
+            .urlReadingFileURLsOnly: true
+        ]) as? [URL], !urls.isEmpty {
+            let imageExts: Set<String> = ["png", "jpg", "jpeg", "tiff", "heic", "gif", "bmp", "webp"]
+
+            for url in urls {
+                if imageExts.contains(url.pathExtension.lowercased()) {
+                    // Image file — load the actual image
+                    if let image = NSImage(contentsOf: url) {
+                        let newItem = ClipboardItem(image: image, sourceApp: frontApp)
+                        DispatchQueue.main.async {
+                            if let top = self.items.first, top.isImage,
+                               top.imageSize == image.size { return }
+                            self.items.insert(newItem, at: 0)
+                            self.addToMenuBarHistory(newItem)
+                            if self.items.count > self.maxRemember {
+                                self.items = Array(self.items.prefix(self.maxRemember))
+                            }
+                        }
+                    }
+                } else {
+                    // Non-image file (PDF, ZIP, etc.)
+                    let fileURL = url
+                    DispatchQueue.main.async {
+                        if let top = self.items.first, top.isFile, top.fileURL == fileURL { return }
+                        let newItem = ClipboardItem(fileURL: fileURL, sourceApp: frontApp)
+                        self.items.insert(newItem, at: 0)
+                        self.addToMenuBarHistory(newItem)
+                        if self.items.count > self.maxRemember {
+                            self.items = Array(self.items.prefix(self.maxRemember))
+                        }
+                    }
+                }
+            }
+            return
+        }
+
+        // 2. Check for image data (screenshots, in-app copies — no file URL involved)
         let imageTypes: [NSPasteboard.PasteboardType] = [
             .tiff, .png,
             NSPasteboard.PasteboardType("public.jpeg"),
@@ -223,27 +313,13 @@ class ClipboardManager: ObservableObject {
         ]
         let hasImage = imageTypes.contains(where: { pb.data(forType: $0) != nil })
 
-        // Also check for file URLs pointing to images (macOS screenshots sometimes use this)
-        var imageFromFileURL: NSImage? = nil
-        if !hasImage,
-           let urlString = pb.string(forType: NSPasteboard.PasteboardType("public.file-url")),
-           let url = URL(string: urlString) {
-            let ext = url.pathExtension.lowercased()
-            if ["png", "jpg", "jpeg", "tiff", "heic"].contains(ext) {
-                imageFromFileURL = NSImage(contentsOf: url)
-            }
-        }
-
-        if let image = imageFromFileURL ?? (hasImage ? loadImageFromPasteboard(pb) : nil) {
+        if hasImage, let image = loadImageFromPasteboard(pb) {
             let newItem = ClipboardItem(image: image, sourceApp: frontApp)
             DispatchQueue.main.async {
-                // Skip if the top item is already an image of the same size
                 if let top = self.items.first, top.isImage,
                    top.imageSize == image.size { return }
-
                 self.items.insert(newItem, at: 0)
                 self.addToMenuBarHistory(newItem)
-
                 if self.items.count > self.maxRemember {
                     self.items = Array(self.items.prefix(self.maxRemember))
                 }
@@ -251,7 +327,7 @@ class ClipboardManager: ObservableObject {
             return
         }
 
-        // Text content
+        // 3. Text content
         guard let content = pb.string(forType: .string),
               !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
@@ -278,7 +354,9 @@ class ClipboardManager: ObservableObject {
 
     func paste(item: ClipboardItem) {
         NSPasteboard.general.clearContents()
-        if item.isImage, let image = item.image {
+        if item.isFile, let url = item.fileURL {
+            NSPasteboard.general.writeObjects([url as NSURL])
+        } else if item.isImage, let image = item.image {
             NSPasteboard.general.writeObjects([image])
         } else {
             NSPasteboard.general.setString(item.content, forType: .string)
@@ -291,23 +369,32 @@ class ClipboardManager: ObservableObject {
         let pb = NSPasteboard.general
         pb.clearContents()
 
-        let textItems = items.filter { !$0.isImage }
+        let textItems = items.filter { !$0.isImage && !$0.isFile }
         let imageItems = items.filter { $0.isImage }
+        let fileItems = items.filter { $0.isFile }
 
-        if !textItems.isEmpty && imageItems.isEmpty {
-            // Text only — join with newlines
+        // Files only — write all URLs
+        if !fileItems.isEmpty && textItems.isEmpty && imageItems.isEmpty {
+            let urls = fileItems.compactMap { $0.fileURL as NSURL? }
+            pb.writeObjects(urls)
+        }
+        // Text only — join with newlines
+        else if !textItems.isEmpty && imageItems.isEmpty && fileItems.isEmpty {
             let combined = textItems.map { $0.content }.joined(separator: "\n")
             pb.setString(combined, forType: .string)
-        } else if textItems.isEmpty && !imageItems.isEmpty {
-            // Images only — write image(s)
+        }
+        // Images only — write image(s)
+        else if textItems.isEmpty && !imageItems.isEmpty && fileItems.isEmpty {
             var objects: [NSPasteboardWriting] = []
             for item in imageItems {
                 if let img = item.image { objects.append(img) }
             }
             pb.writeObjects(objects)
-        } else {
-            // Mixed text + images — build HTML with embedded base64 images
-            var html = "<html><body>"
+        }
+        // Mixed content — build HTML with embedded base64 images, files as links
+        else {
+            var html = "<html><head><meta charset=\"utf-8\"></head><body>"
+            var fileURLs: [URL] = []
             for item in items {
                 if item.isImage, let image = item.image,
                    let tiffData = image.tiffRepresentation,
@@ -317,7 +404,9 @@ class ClipboardManager: ObservableObject {
                     let w = Int(image.size.width)
                     let h = Int(image.size.height)
                     html += "<img src=\"data:image/png;base64,\(base64)\" width=\"\(w)\" height=\"\(h)\" /><br>"
-                } else if !item.isImage {
+                } else if item.isFile, let url = item.fileURL {
+                    fileURLs.append(url)
+                } else if !item.isImage && !item.isFile {
                     let escaped = item.content
                         .replacingOccurrences(of: "&", with: "&amp;")
                         .replacingOccurrences(of: "<", with: "&lt;")
@@ -328,16 +417,33 @@ class ClipboardManager: ObservableObject {
             }
             html += "</body></html>"
 
-            pb.declareTypes([.html, .string], owner: nil)
+            var types: [NSPasteboard.PasteboardType] = [.html, .string]
+            if !fileURLs.isEmpty {
+                types.append(.fileURL)
+            }
+            pb.declareTypes(types, owner: nil)
             if let htmlData = html.data(using: .utf8) {
                 pb.setData(htmlData, forType: .html)
             }
-            // Plain text fallback
-            let plainText = textItems.map { $0.content }.joined(separator: "\n")
-            pb.setString(plainText, forType: .string)
+            // Write file URLs so receiving apps can handle them as files
+            if !fileURLs.isEmpty {
+                pb.writeObjects(fileURLs.map { $0 as NSURL })
+            }
+            // Plain text fallback — only text items, skip files and images
+            let plainText = items
+                .filter { !$0.isImage && !$0.isFile }
+                .map { $0.content }
+                .joined(separator: "\n")
+            if !plainText.isEmpty {
+                pb.setString(plainText, forType: .string)
+            }
         }
 
         lastChangeCount = pb.changeCount
+    }
+
+    func updateChangeCount() {
+        lastChangeCount = NSPasteboard.general.changeCount
     }
 
     func stripFormattingFromClipboard() {
@@ -468,7 +574,9 @@ class ClipboardManager: ObservableObject {
             let fileURL = URL(fileURLWithPath: path)
 
             if let image = NSImage(contentsOf: fileURL) {
-                let newItem = ClipboardItem(image: image, sourceApp: "Screenshot")
+                var newItem = ClipboardItem(image: image, sourceApp: "Screenshot")
+                newItem.fileURL = fileURL
+                newItem.fileName = fileURL.lastPathComponent
                 DispatchQueue.main.async {
                     // Skip if top item is already same-size image
                     if let top = self.items.first, top.isImage,
@@ -520,8 +628,8 @@ class ClipboardManager: ObservableObject {
     }
 
     func addToMenuBarHistory(_ item: ClipboardItem) {
-        // Skip images — only text is persisted in menu bar history
-        guard !item.isImage else { return }
+        // Skip clipboard images (no file path) — screenshots with paths are allowed
+        guard !item.isImage || item.fileURL != nil else { return }
 
         let persistent = PersistentHistoryItem(from: item)
 

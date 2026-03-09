@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import ApplicationServices
 import Combine
+import UniformTypeIdentifiers
 
 extension Notification.Name {
     static let openSettings = Notification.Name("MindClipOpenSettings")
@@ -152,20 +153,53 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             for (index, item) in historySlice.enumerated() {
                 let preview: String
-                if item.isImage {
+                var itemIcon: NSImage? = nil
+                let isScreenshot = item.isImage && item.filePath != nil
+                if item.isImage && !isScreenshot {
                     preview = item.preview
+                } else if isScreenshot, let name = item.fileName {
+                    let dims = item.preview
+                    preview = "\(name)  (\(dims))"
+                    if let path = item.filePath {
+                        itemIcon = NSWorkspace.shared.icon(forFile: path)
+                    } else {
+                        itemIcon = NSWorkspace.shared.icon(for: .png)
+                    }
+                } else if item.isFile, let name = item.fileName {
+                    let sizeStr = item.fileSize.map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) }
+                    preview = sizeStr != nil ? "\(name)  (\(sizeStr!))" : name
+                    if let path = item.filePath {
+                        itemIcon = NSWorkspace.shared.icon(forFile: path)
+                    } else {
+                        let ext = (name as NSString).pathExtension
+                        if let utType = UTType(filenameExtension: ext) {
+                            itemIcon = NSWorkspace.shared.icon(for: utType)
+                        }
+                    }
                 } else {
                     preview = String(item.preview.prefix(60))
                         .replacingOccurrences(of: "\n", with: " ")
                 }
                 let menuEntry = NSMenuItem(
                     title: preview,
-                    action: item.isImage ? nil : #selector(historyItemClicked(_:)),
+                    action: (item.isImage && !isScreenshot) ? nil : #selector(historyItemClicked(_:)),
                     keyEquivalent: index < 9 ? "\(index + 1)" : ""
                 )
+                if let icon = itemIcon {
+                    icon.size = NSSize(width: 16, height: 16)
+                    menuEntry.image = icon
+                }
                 menuEntry.target = self
                 menuEntry.tag = index
-                if !item.isImage {
+                if isScreenshot, let path = item.filePath {
+                    menuEntry.toolTip = "Screenshot\n\n\(path)"
+                } else if item.isFile, let path = item.filePath {
+                    if let source = item.sourceApp {
+                        menuEntry.toolTip = "\(source)\n\n\(path)"
+                    } else {
+                        menuEntry.toolTip = path
+                    }
+                } else if !item.isImage {
                     let fullText = String(item.textContent.prefix(500))
                     if let source = item.sourceApp {
                         menuEntry.toolTip = "\(source)\n\n\(fullText)"
@@ -276,14 +310,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         welcomeWindow?.makeKeyAndOrderFront(nil)
     }
 
+
     @objc func historyItemClicked(_ sender: NSMenuItem) {
         let index = sender.tag
         let history = ClipboardManager.shared.menuBarHistory
         guard index >= 0, index < history.count else { return }
         let item = history[index]
-        guard !item.isImage else { return }
+        let isScreenshot = item.isImage && item.filePath != nil
+        guard !item.isImage || isScreenshot else { return }
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(item.textContent, forType: .string)
+        if isScreenshot, let path = item.filePath {
+            let url = URL(fileURLWithPath: path)
+            NSPasteboard.general.writeObjects([url as NSURL])
+        } else if item.isFile, let path = item.filePath {
+            let url = URL(fileURLWithPath: path)
+            NSPasteboard.general.writeObjects([url as NSURL])
+        } else {
+            NSPasteboard.general.setString(item.textContent, forType: .string)
+        }
+        // Update changeCount so poll doesn't re-add
+        ClipboardManager.shared.updateChangeCount()
+
+        // Auto-paste: send Cmd+V after a short delay for the menu to close
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            self?.keyMonitor.postSyntheticPaste()
+        }
     }
 
     @objc func clearHistory() {
