@@ -13,7 +13,7 @@ struct AboutView: View {
             Text("MindClip")
                 .font(.system(size: 20, weight: .bold))
 
-            Text("Version 1.0.0")
+            Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
 

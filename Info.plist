@@ -30,5 +30,9 @@
     <false/>
     <key>NSSupportsSuddenTermination</key>
     <false/>
+    <key>SUFeedURL</key>
+    <string>https://dragon6sic6.github.io/MindClip/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>6wmEMiBzV1seL1OBukeGnYf8XF9rd63vq2gDCUAT3kg=</string>
 </dict>
 </plist>

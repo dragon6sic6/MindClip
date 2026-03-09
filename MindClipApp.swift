@@ -3,6 +3,7 @@ import AppKit
 import ApplicationServices
 import Combine
 import UniformTypeIdentifiers
+import Sparkle
 
 extension Notification.Name {
     static let openSettings = Notification.Name("MindClipOpenSettings")
@@ -30,6 +31,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var historyItems: [NSMenuItem] = []
     private var accessibilityCheckTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
+    private let updaterController: SPUStandardUpdaterController
+
+    override init() {
+        updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+        super.init()
+    }
 
     private var hasCompletedOnboarding: Bool {
         get { UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") }
@@ -231,6 +238,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let aboutItem = NSMenuItem(title: "About MindClip", action: #selector(openAbout), keyEquivalent: "")
         aboutItem.target = self
         menu.addItem(aboutItem)
+
+        let checkForUpdatesItem = NSMenuItem(title: "Check for Updates...", action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)), keyEquivalent: "")
+        checkForUpdatesItem.target = updaterController
+        menu.addItem(checkForUpdatesItem)
+
         menu.addItem(NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ","))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit MindClip", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
@@ -248,7 +260,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func openSettings() {
         if settingsWindow == nil {
-            let settingsView = SettingsView()
+            let settingsView = SettingsView(updater: updaterController.updater)
             let hostingController = NSHostingController(rootView: settingsView)
             settingsWindow = NSWindow(contentViewController: hostingController)
             settingsWindow?.title = "MindClip Settings"

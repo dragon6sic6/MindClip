@@ -1,11 +1,17 @@
 import SwiftUI
 import ServiceManagement
+import Sparkle
 
 struct SettingsView: View {
     @ObservedObject private var manager = ClipboardManager.shared
     @State private var selectedDuration: DurationOption = .thirtyMinutes
     @State private var customMinutes: Int = 30
     @State private var showClearHistoryConfirm = false
+    private let updater: SPUUpdater
+
+    init(updater: SPUUpdater) {
+        self.updater = updater
+    }
 
     enum DurationOption: CaseIterable {
         case fifteenMinutes, thirtyMinutes, oneHour, twoHours, untilQuit, custom
@@ -279,6 +285,20 @@ struct SettingsView: View {
                             .toggleStyle(.switch)
                             .controlSize(.small)
                         }
+
+                        Divider().opacity(0.3)
+
+                        HStack {
+                            Text("Check for updates automatically")
+                                .font(.system(size: 12))
+                            Spacer()
+                            Toggle("", isOn: Binding(
+                                get: { updater.automaticallyChecksForUpdates },
+                                set: { updater.automaticallyChecksForUpdates = $0 }
+                            ))
+                            .toggleStyle(.switch)
+                            .controlSize(.small)
+                        }
                     }
                 }
 
@@ -305,7 +325,7 @@ struct SettingsView: View {
 
             Spacer(minLength: 8)
 
-            Text("v1.2.0")
+            Text("v\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")")
                 .font(.system(size: 10))
                 .foregroundStyle(.quaternary)
                 .padding(.bottom, 10)
