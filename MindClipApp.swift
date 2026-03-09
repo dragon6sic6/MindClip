@@ -9,6 +9,16 @@ extension Notification.Name {
     static let openSettings = Notification.Name("MindClipOpenSettings")
 }
 
+extension NSImage {
+    static var appIcon: NSImage {
+        if let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+           let img = NSImage(contentsOf: url) {
+            return img
+        }
+        return NSApp.applicationIconImage
+    }
+}
+
 @main
 struct MindClipApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
@@ -34,6 +44,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let updaterController: SPUStandardUpdaterController
 
     override init() {
+        // Register app icon under NSApplicationIcon name so Sparkle and system dialogs find it
+        // (accessory apps don't get this automatically)
+        let icon = NSImage.appIcon
+        icon.setName(NSImage.applicationIconName)
+        NSApp.applicationIconImage = icon
         updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
         super.init()
     }
@@ -45,6 +60,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+
+        // Re-register app icon after setActivationPolicy (which may reset it)
+        let icon = NSImage.appIcon
+        icon.setName(NSImage.applicationIconName)
+        NSApp.applicationIconImage = icon
 
         clipboardManager = ClipboardManager.shared
         setupMenuBar()

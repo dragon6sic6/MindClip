@@ -1,13 +1,15 @@
 import SwiftUI
+import AppKit
 
 struct AboutView: View {
     var body: some View {
         VStack(spacing: 12) {
             Spacer()
 
-            Image(systemName: "doc.on.clipboard.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.accentColor)
+            Image(nsImage: NSImage.appIcon)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 64, height: 64)
                 .padding(.bottom, 4)
 
             Text("MindClip")

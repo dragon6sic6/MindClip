@@ -43,9 +43,10 @@ struct SettingsView: View {
         VStack(spacing: 0) {
             // Header
             VStack(spacing: 6) {
-                Image(systemName: "doc.on.clipboard.fill")
-                    .font(.system(size: 28))
-                    .foregroundColor(.accentColor)
+                Image(nsImage: NSImage.appIcon)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 36, height: 36)
 
                 Text("MindClip")
                     .font(.system(size: 18, weight: .bold))
