@@ -379,45 +379,50 @@ class ClipboardManager: ObservableObject {
         let imageItems = items.filter { $0.isImage }
         let fileItems = items.filter { $0.isFile }
 
-        // Files only — write all URLs
-        if !fileItems.isEmpty && textItems.isEmpty && imageItems.isEmpty {
+        // ── Single-type fast paths ──────────────────────────────────
+
+        if fileItems.count == items.count {
+            // All files
             let urls = fileItems.compactMap { $0.fileURL as NSURL? }
             pb.writeObjects(urls)
-            // Legacy filenames type for Chrome/web app compatibility
             let paths = fileItems.compactMap { $0.fileURL?.path }
             pb.addTypes([filenamesPboardType], owner: nil)
             pb.setPropertyList(paths, forType: filenamesPboardType)
         }
-        // Text only — join with newlines
-        else if !textItems.isEmpty && imageItems.isEmpty && fileItems.isEmpty {
-            let combined = textItems.map { $0.content }.joined(separator: "\n")
-            pb.setString(combined, forType: .string)
+        else if textItems.count == items.count {
+            // All text
+            pb.setString(textItems.map { $0.content }.joined(separator: "\n"), forType: .string)
         }
-        // Images only — write image(s)
-        else if textItems.isEmpty && !imageItems.isEmpty && fileItems.isEmpty {
-            var objects: [NSPasteboardWriting] = []
-            for item in imageItems {
-                if let img = item.image { objects.append(img) }
-            }
-            pb.writeObjects(objects)
+        else if imageItems.count == items.count {
+            // All images
+            pb.writeObjects(imageItems.compactMap { $0.image })
         }
-        // Mixed content with files — write file URLs first, then append text type
-        else if !fileItems.isEmpty {
-            let urls = fileItems.compactMap { $0.fileURL as NSURL? }
-            pb.writeObjects(urls)
-            // Legacy filenames for Chrome/web app compatibility
-            let paths = fileItems.compactMap { $0.fileURL?.path }
-            pb.addTypes([filenamesPboardType], owner: nil)
-            pb.setPropertyList(paths, forType: filenamesPboardType)
-            // Append text — addTypes extends existing item without clearing it
-            let plainText = textItems.map { $0.content }.joined(separator: "\n")
-            if !plainText.isEmpty {
-                pb.addTypes([.string], owner: nil)
-                pb.setString(plainText, forType: .string)
-            }
-        }
-        // Mixed content without files (images + text) — use HTML approach
+
+        // ── Mixed content: unified RTFD + HTML approach ─────────────
         else {
+            let plainText = textItems.map { $0.content }.joined(separator: "\n")
+
+            // 1) Build RTFD with all items in selection order
+            let attrStr = NSMutableAttributedString()
+            for item in items {
+                if item.isFile {
+                    if let url = item.fileURL,
+                       let wrapper = try? FileWrapper(url: url, options: .immediate) {
+                        let attachment = NSTextAttachment(fileWrapper: wrapper)
+                        attrStr.append(NSAttributedString(attachment: attachment))
+                        attrStr.append(NSAttributedString(string: "\n"))
+                    }
+                } else if item.isImage, let image = item.image {
+                    let attachment = NSTextAttachment()
+                    attachment.image = image
+                    attrStr.append(NSAttributedString(attachment: attachment))
+                    attrStr.append(NSAttributedString(string: "\n"))
+                } else {
+                    attrStr.append(NSAttributedString(string: item.content + "\n"))
+                }
+            }
+
+            // 2) Build HTML (images + text; files are omitted from HTML)
             var html = "<html><head><meta charset=\"utf-8\"></head><body>"
             for item in items {
                 if item.isImage, let image = item.image,
@@ -439,13 +444,31 @@ class ClipboardManager: ObservableObject {
             }
             html += "</body></html>"
 
-            pb.declareTypes([.html, .string], owner: nil)
+            // 3) Declare all types we provide
+            var types: [NSPasteboard.PasteboardType] = [.rtfd, .html, .string]
+            if fileItems.count == 1 {
+                types.append(NSPasteboard.PasteboardType("public.file-url"))
+            }
+            if !fileItems.isEmpty {
+                types.append(filenamesPboardType)
+            }
+            pb.declareTypes(types, owner: nil)
+
+            // 4) Set data for each type
+            if let rtfdData = attrStr.rtfd(from: NSRange(location: 0, length: attrStr.length),
+                                           documentAttributes: [:]) {
+                pb.setData(rtfdData, forType: .rtfd)
+            }
             if let htmlData = html.data(using: .utf8) {
                 pb.setData(htmlData, forType: .html)
             }
-            let plainText = textItems.map { $0.content }.joined(separator: "\n")
-            if !plainText.isEmpty {
-                pb.setString(plainText, forType: .string)
+            pb.setString(plainText, forType: .string)
+            if fileItems.count == 1, let url = fileItems.first?.fileURL {
+                pb.setString(url.absoluteString, forType: NSPasteboard.PasteboardType("public.file-url"))
+            }
+            if !fileItems.isEmpty {
+                let paths = fileItems.compactMap { $0.fileURL?.path }
+                pb.setPropertyList(paths, forType: filenamesPboardType)
             }
         }
 
