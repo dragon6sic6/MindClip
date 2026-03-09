@@ -401,29 +401,35 @@ class ClipboardManager: ObservableObject {
             }
             pb.writeObjects(objects)
         }
-        // Mixed content with files — each item as a separate pasteboard object
+        // Mixed content with files — write file URLs + text via manual types
+        // (NSURL as NSPasteboardWriting claims .string type with the path,
+        //  which conflicts with actual text items in writeObjects)
         else if !fileItems.isEmpty {
-            var objects: [NSPasteboardWriting] = []
-            var filePaths: [String] = []
-            for item in items {
-                if item.isFile, let url = item.fileURL {
-                    objects.append(url as NSURL)
-                    filePaths.append(url.path)
-                } else if item.isImage, let img = item.image {
-                    objects.append(img)
-                }
-            }
-            // Add text as its own pasteboard item so apps read it separately
+            let fileURLs = fileItems.compactMap { $0.fileURL }
+            let filePaths = fileURLs.map { $0.path }
+
+            // Declare all types we need upfront
+            var types: [NSPasteboard.PasteboardType] = [
+                .fileURL,
+                filenamesPboardType
+            ]
             let plainText = textItems.map { $0.content }.joined(separator: "\n")
             if !plainText.isEmpty {
-                let textItem = NSPasteboardItem()
-                textItem.setString(plainText, forType: .string)
-                objects.append(textItem)
+                types.append(.string)
             }
-            pb.writeObjects(objects)
+            pb.declareTypes(types, owner: nil)
+
+            // Write file URLs
+            if let first = fileURLs.first {
+                pb.setString(first.absoluteString, forType: .fileURL)
+            }
             // Legacy filenames for Chrome/web app compatibility
-            pb.addTypes([filenamesPboardType], owner: nil)
             pb.setPropertyList(filePaths, forType: filenamesPboardType)
+
+            // Write text separately — won't be overwritten by file URL
+            if !plainText.isEmpty {
+                pb.setString(plainText, forType: .string)
+            }
         }
         // Mixed content without files (images + text) — use HTML approach
         else {
