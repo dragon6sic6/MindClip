@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AA000001AAAA00000000000A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA00000000000C /* Assets.xcassets */; };
+		AA000001AAAA00000000000B /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA00000000000D /* AppIcon.icns */; };
 		AA000001AAAA000000000001 /* MindClipApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA000000000001 /* MindClipApp.swift */; };
 		AA000001AAAA000000000002 /* ClipboardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA000000000002 /* ClipboardManager.swift */; };
 		AA000001AAAA000000000003 /* KeyboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA000000000003 /* KeyboardMonitor.swift */; };
@@ -30,6 +32,8 @@
 		AA000002AAAA000000000009 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		AA000002AAAA00000000000A /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		AA000002AAAA00000000000B /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		AA000002AAAA00000000000C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AA000002AAAA00000000000D /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		AA000003AAAA000000000001 /* MindClip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MindClip.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -58,6 +62,8 @@
 				AA000002AAAA00000000000B /* WelcomeView.swift */,
 				AA000002AAAA000000000007 /* Info.plist */,
 				AA000002AAAA000000000008 /* MindClip.entitlements */,
+				AA000002AAAA00000000000C /* Assets.xcassets */,
+				AA000002AAAA00000000000D /* AppIcon.icns */,
 				AA000005AAAA000000000002 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -79,6 +85,7 @@
 			buildPhases = (
 				AA000008AAAA000000000001 /* Sources */,
 				AA000004AAAA000000000001 /* Frameworks */,
+				AA000008AAAA000000000002 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -135,6 +142,18 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA000008AAAA000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA000001AAAA00000000000A /* Assets.xcassets in Resources */,
+				AA000001AAAA00000000000B /* AppIcon.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		AA00000AAAAA000000000001 /* Debug */ = {
