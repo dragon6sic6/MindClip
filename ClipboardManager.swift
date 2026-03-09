@@ -352,17 +352,23 @@ class ClipboardManager: ObservableObject {
         }
     }
 
+    private let filenamesPboardType = NSPasteboard.PasteboardType("NSFilenamesPboardType")
+
     func paste(item: ClipboardItem) {
-        NSPasteboard.general.clearContents()
+        let pb = NSPasteboard.general
+        pb.clearContents()
         if item.isFile, let url = item.fileURL {
-            NSPasteboard.general.writeObjects([url as NSURL])
+            pb.writeObjects([url as NSURL])
+            // Legacy filenames type — Chrome/web apps use this for proper filenames
+            pb.addTypes([filenamesPboardType], owner: nil)
+            pb.setPropertyList([url.path], forType: filenamesPboardType)
         } else if item.isImage, let image = item.image {
-            NSPasteboard.general.writeObjects([image])
+            pb.writeObjects([image])
         } else {
-            NSPasteboard.general.setString(item.content, forType: .string)
+            pb.setString(item.content, forType: .string)
         }
         // Update changeCount so the poll doesn't re-add this item
-        lastChangeCount = NSPasteboard.general.changeCount
+        lastChangeCount = pb.changeCount
     }
 
     func pasteMultiple(items: [ClipboardItem]) {
@@ -377,6 +383,10 @@ class ClipboardManager: ObservableObject {
         if !fileItems.isEmpty && textItems.isEmpty && imageItems.isEmpty {
             let urls = fileItems.compactMap { $0.fileURL as NSURL? }
             pb.writeObjects(urls)
+            // Legacy filenames type for Chrome/web app compatibility
+            let paths = fileItems.compactMap { $0.fileURL?.path }
+            pb.addTypes([filenamesPboardType], owner: nil)
+            pb.setPropertyList(paths, forType: filenamesPboardType)
         }
         // Text only — join with newlines
         else if !textItems.isEmpty && imageItems.isEmpty && fileItems.isEmpty {
@@ -391,10 +401,33 @@ class ClipboardManager: ObservableObject {
             }
             pb.writeObjects(objects)
         }
-        // Mixed content — build HTML with embedded base64 images, files as links
+        // Mixed content with files — each item as a separate pasteboard object
+        else if !fileItems.isEmpty {
+            var objects: [NSPasteboardWriting] = []
+            var filePaths: [String] = []
+            for item in items {
+                if item.isFile, let url = item.fileURL {
+                    objects.append(url as NSURL)
+                    filePaths.append(url.path)
+                } else if item.isImage, let img = item.image {
+                    objects.append(img)
+                }
+            }
+            // Add text as its own pasteboard item so apps read it separately
+            let plainText = textItems.map { $0.content }.joined(separator: "\n")
+            if !plainText.isEmpty {
+                let textItem = NSPasteboardItem()
+                textItem.setString(plainText, forType: .string)
+                objects.append(textItem)
+            }
+            pb.writeObjects(objects)
+            // Legacy filenames for Chrome/web app compatibility
+            pb.addTypes([filenamesPboardType], owner: nil)
+            pb.setPropertyList(filePaths, forType: filenamesPboardType)
+        }
+        // Mixed content without files (images + text) — use HTML approach
         else {
             var html = "<html><head><meta charset=\"utf-8\"></head><body>"
-            var fileURLs: [URL] = []
             for item in items {
                 if item.isImage, let image = item.image,
                    let tiffData = image.tiffRepresentation,
@@ -404,8 +437,6 @@ class ClipboardManager: ObservableObject {
                     let w = Int(image.size.width)
                     let h = Int(image.size.height)
                     html += "<img src=\"data:image/png;base64,\(base64)\" width=\"\(w)\" height=\"\(h)\" /><br>"
-                } else if item.isFile, let url = item.fileURL {
-                    fileURLs.append(url)
                 } else if !item.isImage && !item.isFile {
                     let escaped = item.content
                         .replacingOccurrences(of: "&", with: "&amp;")
@@ -417,23 +448,11 @@ class ClipboardManager: ObservableObject {
             }
             html += "</body></html>"
 
-            var types: [NSPasteboard.PasteboardType] = [.html, .string]
-            if !fileURLs.isEmpty {
-                types.append(.fileURL)
-            }
-            pb.declareTypes(types, owner: nil)
+            pb.declareTypes([.html, .string], owner: nil)
             if let htmlData = html.data(using: .utf8) {
                 pb.setData(htmlData, forType: .html)
             }
-            // Write file URLs so receiving apps can handle them as files
-            if !fileURLs.isEmpty {
-                pb.writeObjects(fileURLs.map { $0 as NSURL })
-            }
-            // Plain text fallback — only text items, skip files and images
-            let plainText = items
-                .filter { !$0.isImage && !$0.isFile }
-                .map { $0.content }
-                .joined(separator: "\n")
+            let plainText = textItems.map { $0.content }.joined(separator: "\n")
             if !plainText.isEmpty {
                 pb.setString(plainText, forType: .string)
             }
