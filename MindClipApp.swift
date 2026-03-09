@@ -61,15 +61,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Accessibility
 
     private func checkAccessibilityAndStart() {
-        let trusted = AXIsProcessTrustedWithOptions(
-            [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
-        )
-
-        if trusted {
+        if AXIsProcessTrusted() {
             startKeyboardMonitor()
             updateMenuStatus()
         } else {
-            showAccessibilityAlert()
+            // Silently poll — don't show extra dialogs (welcome view handles first launch)
             accessibilityCheckTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
                 if AXIsProcessTrusted() {
                     timer.invalidate()
@@ -89,21 +85,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showAccessibilityAlert() {
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-
-        let alert = NSAlert()
-        alert.messageText = "MindClip Needs Accessibility Permission"
-        alert.informativeText = "MindClip needs Accessibility access to detect Cmd+V.\n\nFind MindClip in the list and toggle it ON."
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "Open System Settings")
-        alert.addButton(withTitle: "OK")
-
-        if alert.runModal() == .alertFirstButtonReturn {
-            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
-        }
-
-        NSApp.setActivationPolicy(.accessory)
+        // Only used for non-first-launch scenarios (e.g. permission revoked)
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
     }
 
     // MARK: - Menu bar
