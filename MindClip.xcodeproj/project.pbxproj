@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		AA000001AAAA00000000000A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA00000000000C /* Assets.xcassets */; };
 		AA000001AAAA00000000000B /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA00000000000D /* AppIcon.icns */; };
+		AA000001AAAA00000000000E /* menubar_icon.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA00000000000E /* menubar_icon.png */; };
 		AA000001AAAA000000000001 /* MindClipApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA000000000001 /* MindClipApp.swift */; };
 		AA000001AAAA000000000002 /* ClipboardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA000000000002 /* ClipboardManager.swift */; };
 		AA000001AAAA000000000003 /* KeyboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA000000000003 /* KeyboardMonitor.swift */; };
@@ -34,6 +35,7 @@
 		AA000002AAAA00000000000B /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		AA000002AAAA00000000000C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA000002AAAA00000000000D /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
+		AA000002AAAA00000000000E /* menubar_icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = menubar_icon.png; sourceTree = "<group>"; };
 		AA000003AAAA000000000001 /* MindClip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MindClip.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -64,6 +66,7 @@
 				AA000002AAAA000000000008 /* MindClip.entitlements */,
 				AA000002AAAA00000000000C /* Assets.xcassets */,
 				AA000002AAAA00000000000D /* AppIcon.icns */,
+				AA000002AAAA00000000000E /* menubar_icon.png */,
 				AA000005AAAA000000000002 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -150,6 +153,7 @@
 			files = (
 				AA000001AAAA00000000000A /* Assets.xcassets in Resources */,
 				AA000001AAAA00000000000B /* AppIcon.icns in Resources */,
+				AA000001AAAA00000000000E /* menubar_icon.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -274,13 +278,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				AUTOMATION_APPLE_EVENTS = YES;
 				CODE_SIGN_ENTITLEMENTS = MindClip.entitlements;
-				CODE_SIGN_IDENTITY = "-";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -289,6 +294,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.3.0;
+				OTHER_CODE_SIGN_FLAGS = "--timestamp";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mindact.mindclip;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -302,13 +308,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				AUTOMATION_APPLE_EVENTS = YES;
 				CODE_SIGN_ENTITLEMENTS = MindClip.entitlements;
-				CODE_SIGN_IDENTITY = "-";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -317,6 +324,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.3.0;
+				OTHER_CODE_SIGN_FLAGS = "--timestamp";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mindact.mindclip;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

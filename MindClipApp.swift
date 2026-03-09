@@ -111,8 +111,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "MindClip")
-            button.image?.isTemplate = true
+            if let iconPath = Bundle.main.path(forResource: "menubar_icon", ofType: "png"),
+               let icon = NSImage(contentsOfFile: iconPath) {
+                icon.size = NSSize(width: 18, height: 18)
+                icon.isTemplate = true
+                button.image = icon
+            } else {
+                button.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "MindClip")
+                button.image?.isTemplate = true
+            }
         }
         rebuildMenu()
     }
