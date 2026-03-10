@@ -46,6 +46,20 @@ Built by **Mindact**.
 
 > **Note:** macOS requires you to manually enable Accessibility access in **System Settings > Privacy & Security > Accessibility**. Toggle MindClip ON.
 
+## Uninstall
+
+To completely remove MindClip and all its data:
+
+```bash
+killall MindClip 2>/dev/null
+rm -rf ~/Applications/MindClip.app /Applications/MindClip.app
+defaults delete com.mindact.mindclip
+rm -rf ~/Library/"Application Support"/MindClip
+rm -rf ~/Library/Caches/com.mindact.mindclip
+```
+
+You may also want to remove MindClip from **System Settings > Privacy & Security > Accessibility**.
+
 ## Keyboard Shortcuts
 
 | Action | Shortcut |
