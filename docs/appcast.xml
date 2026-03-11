@@ -5,6 +5,14 @@
         <description>Most recent changes with links to updates.</description>
         <language>en</language>
         <item>
+            <title>1.5.1</title>
+            <pubDate>Wed, 11 Mar 2026 18:43:06 +0100</pubDate>
+            <sparkle:version>6</sparkle:version>
+            <sparkle:shortVersionString>1.5.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/dragon6sic6/MindClip/releases/download/v1.5.1/MindClip.dmg" length="2162347" type="application/octet-stream" sparkle:edSignature="od0ScEaVVg8N9rFstwgp91TS2z8Jc8GqHg7TRZrFNlp5Sd9IlXqYUCIGNZTfiJvh7Ahj8tG1hgaFpuAsev+pCQ=="/>
+        </item>
+        <item>
             <title>1.5.0</title>
             <pubDate>Tue, 10 Mar 2026 00:03:02 +0100</pubDate>
             <sparkle:version>5</sparkle:version>
