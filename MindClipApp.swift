@@ -30,7 +30,7 @@ struct MindClipApp: App {
     }
 }
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     var statusItem: NSStatusItem?
     var clipboardManager: ClipboardManager!
     var keyMonitor: KeyboardMonitor!
@@ -41,7 +41,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var historyItems: [NSMenuItem] = []
     private var accessibilityCheckTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
-    private let updaterController: SPUStandardUpdaterController
+    private var updaterController: SPUStandardUpdaterController
+    private var updateAvailable = false
 
     override init() {
         // Register app icon under NSApplicationIcon name so Sparkle and system dialogs find it
@@ -49,8 +50,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let icon = NSImage.appIcon
         icon.setName(NSImage.applicationIconName)
         NSApp.applicationIconImage = icon
-        updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+        // Temp init — will be replaced after super.init() so we can pass self as delegate
+        updaterController = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: nil, userDriverDelegate: nil)
         super.init()
+        // Re-create with self as delegate (deferred start — call startUpdater() in applicationDidFinishLaunching)
+        updaterController = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: nil)
+    }
+
+    // MARK: - SPUUpdaterDelegate
+
+    func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
+        updateAvailable = true
+        updateMenuBarIcon()
+    }
+
+    func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: Error) {
+        updateAvailable = false
+        updateMenuBarIcon()
     }
 
     private var hasCompletedOnboarding: Bool {
@@ -68,6 +84,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         clipboardManager = ClipboardManager.shared
         setupMenuBar()
+
+        // Start Sparkle updater (delegate was set via init, but we deferred start)
+        updaterController.startUpdater()
 
         // Rebuild menu whenever history changes so it's always fresh on click
         clipboardManager.$menuBarHistory
@@ -120,18 +139,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        if let button = statusItem?.button {
-            if let iconPath = Bundle.main.path(forResource: "menubar_icon", ofType: "png"),
-               let icon = NSImage(contentsOfFile: iconPath) {
-                icon.size = NSSize(width: 18, height: 18)
-                icon.isTemplate = true
-                button.image = icon
-            } else {
-                button.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "MindClip")
-                button.image?.isTemplate = true
-            }
-        }
+        updateMenuBarIcon()
         rebuildMenu()
+    }
+
+    private func updateMenuBarIcon() {
+        guard let button = statusItem?.button else { return }
+        guard let iconPath = Bundle.main.path(forResource: "menubar_icon", ofType: "png"),
+              let icon = NSImage(contentsOfFile: iconPath) else {
+            button.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "MindClip")
+            button.image?.isTemplate = true
+            return
+        }
+        icon.size = NSSize(width: 18, height: 18)
+        icon.isTemplate = true
+
+        if updateAvailable {
+            // Composite icon with red update dot in upper-right corner
+            let badged = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { rect in
+                icon.draw(in: rect)
+                NSColor.systemRed.setFill()
+                let dotSize: CGFloat = 6
+                let dot = NSRect(x: rect.width - dotSize, y: rect.height - dotSize,
+                                 width: dotSize, height: dotSize)
+                NSBezierPath(ovalIn: dot).fill()
+                return true
+            }
+            badged.isTemplate = false  // Must be non-template to show color
+            button.image = badged
+        } else {
+            button.image = icon
+        }
     }
 
     private func rebuildMenu() {

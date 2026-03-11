@@ -5,11 +5,32 @@
         <description>Most recent changes with links to updates.</description>
         <language>en</language>
         <item>
+            <title>1.5.2</title>
+            <pubDate>Wed, 11 Mar 2026 20:40:39 +0100</pubDate>
+            <sparkle:version>7</sparkle:version>
+            <sparkle:shortVersionString>1.5.2</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>What's New in 1.5.2</h3>
+                <ul>
+                    <li>Update badge — red dot on menu bar icon when an update is available</li>
+                    <li>Release notes shown in the update dialog before installing</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/dragon6sic6/MindClip/releases/download/v1.5.2/MindClip.dmg" length="2163811" type="application/octet-stream" sparkle:edSignature="U1z6tQg9gc6H6b3Mz+iJc1CtFmmaq8xWKt97EvWvQBGDYWPqRsWiCH1l+qwQCwsKIH6ziOuArkyBRNDZ9FM7AQ=="/>
+        </item>
+        <item>
             <title>1.5.1</title>
             <pubDate>Wed, 11 Mar 2026 18:43:06 +0100</pubDate>
             <sparkle:version>6</sparkle:version>
             <sparkle:shortVersionString>1.5.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>What's New in 1.5.1</h3>
+                <ul>
+                    <li>Picker window can now be dragged to reposition</li>
+                </ul>
+            ]]></description>
             <enclosure url="https://github.com/dragon6sic6/MindClip/releases/download/v1.5.1/MindClip.dmg" length="2162347" type="application/octet-stream" sparkle:edSignature="od0ScEaVVg8N9rFstwgp91TS2z8Jc8GqHg7TRZrFNlp5Sd9IlXqYUCIGNZTfiJvh7Ahj8tG1hgaFpuAsev+pCQ=="/>
         </item>
         <item>
@@ -18,6 +39,13 @@
             <sparkle:version>5</sparkle:version>
             <sparkle:shortVersionString>1.5.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>What's New in 1.5.0</h3>
+                <ul>
+                    <li>App icon now shows correctly in all dialogs</li>
+                    <li>Auto-updates powered by Sparkle</li>
+                </ul>
+            ]]></description>
             <enclosure url="https://github.com/dragon6sic6/MindClip/releases/download/v1.5.0/MindClip.dmg" length="2161030" type="application/octet-stream" sparkle:edSignature="o9iIjtx6gw6bjMocjTm05Nkl4xA9Kh8czuXPU4b3ItFld/qfMo/daFxosgnYuWqNrYctym0iNomVwqTLjZE7Cw=="/>
         </item>
         <item>
@@ -26,6 +54,13 @@
             <sparkle:version>4</sparkle:version>
             <sparkle:shortVersionString>1.4.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>What's New in 1.4.0</h3>
+                <ul>
+                    <li>First release with Sparkle auto-update support</li>
+                    <li>Signed and notarized for macOS Gatekeeper</li>
+                </ul>
+            ]]></description>
             <enclosure url="https://github.com/dragon6sic6/MindClip/releases/download/v1.4.0/MindClip.dmg" length="2155128" type="application/octet-stream" sparkle:edSignature="st0BZnOdlXu+WsqRJh3gFTntYBAofsize6yWKYybHkMwx2IJWm4lwBZyRF8qw5xaLLJ2AHhEYFYx/iDJ1XKnDQ=="/>
         </item>
     </channel>
