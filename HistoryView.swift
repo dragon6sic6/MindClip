@@ -188,6 +188,5 @@ struct HistoryRow: View {
         )
         .contentShape(Rectangle())
         .onTapGesture { onCopy() }
-        .animation(.easeInOut(duration: 0.12), value: isHovered)
     }
 }

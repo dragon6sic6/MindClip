@@ -59,6 +59,7 @@ class PickerWindow: NSObject {
         win.contentView = hosting
         win.isOpaque = false
         win.backgroundColor = .clear
+        win.isMovableByWindowBackground = true
         win.level = .popUpMenu
         win.hasShadow = true
         win.ignoresMouseEvents = false

@@ -519,7 +519,6 @@ struct ClipboardItemRow: View {
             }
             return NSItemProvider(object: item.content as NSString)
         }
-        .animation(.easeInOut(duration: 0.12), value: isHighlighted)
     }
 
     // MARK: - Badge Content
@@ -693,7 +692,6 @@ struct PinnedItemRow: View {
         .onDrag {
             NSItemProvider(object: snippet.content as NSString)
         }
-        .animation(.easeInOut(duration: 0.12), value: isHovered)
     }
 }
 

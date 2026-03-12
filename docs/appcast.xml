@@ -5,6 +5,20 @@
         <description>Most recent changes with links to updates.</description>
         <language>en</language>
         <item>
+            <title>1.5.4</title>
+            <pubDate>Wed, 12 Mar 2026 23:55:00 +0100</pubDate>
+            <sparkle:version>9</sparkle:version>
+            <sparkle:shortVersionString>1.5.4</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>What's New in 1.5.4</h3>
+                <ul>
+                    <li>Removed hover animation on picker rows to prevent distracting visual movement</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/dragon6sic6/MindClip/releases/download/v1.5.4/MindClip.dmg" length="2273579" type="application/octet-stream" sparkle:edSignature="tPxse1zeYdWVriyanbqSfVYR6wSF6ZXQWG0x0r+OLKOCPysCjn0Is5Fjtd2VyizfUyUQy4vz+X/LywRYncwWBw=="/>
+        </item>
+        <item>
             <title>1.5.3</title>
             <pubDate>Wed, 12 Mar 2026 23:30:00 +0100</pubDate>
             <sparkle:version>8</sparkle:version>

@@ -191,7 +191,6 @@ class ClipboardManager: ObservableObject {
     @Published var menuBarHistory: [PersistentHistoryItem] = []
     @Published var menuBarRetention: MenuBarRetention = .forever
     @Published var appearanceMode: AppearanceMode = .system
-
     private var lastChangeCount: Int = 0
     private var pollTimer: Timer?
     private var sessionTimer: Timer?
@@ -231,6 +230,7 @@ class ClipboardManager: ObservableObject {
            let mode = AppearanceMode(rawValue: modeStr) {
             appearanceMode = mode
         }
+
         applyAppearance()
     }
 
