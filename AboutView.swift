@@ -16,19 +16,19 @@ struct AboutView: View {
                 .font(.system(size: 20, weight: .bold))
 
             Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")")
-                .font(.system(size: 12))
+                .font(Theme.Typography.caption)
                 .foregroundStyle(.secondary)
 
             Text("by Mindact")
-                .font(.system(size: 12))
-                .foregroundStyle(.tertiary)
+                .font(Theme.Typography.caption)
+                .foregroundStyle(Theme.metadataText)
 
             Spacer()
 
             Divider().opacity(0.3)
 
             Text("A lightweight clipboard manager for macOS.")
-                .font(.system(size: 11))
+                .font(Theme.Typography.settingsDescription)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)

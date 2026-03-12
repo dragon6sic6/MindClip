@@ -61,29 +61,26 @@ struct PickerView: View {
     var body: some View {
         ZStack {
             // Opaque background
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.Radius.window, style: .continuous)
                 .fill(Color(.windowBackgroundColor))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: Theme.Radius.window, style: .continuous)
+                        .strokeBorder(Theme.cardBorder, lineWidth: 1)
                 )
-                .shadow(color: .black.opacity(0.3), radius: 30, x: 0, y: 10)
+                .shadow(color: .black.opacity(0.25), radius: 24, x: 0, y: 8)
 
             VStack(spacing: 0) {
                 // Header
-                HStack {
-                    Image(systemName: "doc.on.clipboard.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.secondary)
-
-                    Text("Clipboard")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.primary)
-
-                    Spacer()
-
+                HStack(spacing: 8) {
                     // Session timer badge
                     SessionTimerBadge()
+
+                    // Item count badge
+                    Text("\(manager.items.count) item\(manager.items.count == 1 ? "" : "s")")
+                        .font(Theme.Typography.metadata)
+                        .foregroundStyle(Theme.metadataText)
+
+                    Spacer()
 
                     // Search toggle button
                     Button(action: {
@@ -123,7 +120,7 @@ struct PickerView: View {
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(.quaternary, in: Capsule())
+                            .background(Theme.badgeFill, in: Capsule())
                     }
                     .buttonStyle(.plain)
 
@@ -145,14 +142,27 @@ struct PickerView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 12))
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(Theme.metadataText)
                         TextField("Search...", text: $searchText)
                             .textFieldStyle(.plain)
-                            .font(.system(size: 13))
+                            .font(Theme.Typography.body)
+
+                        if !searchText.isEmpty {
+                            Button(action: { searchText = "" }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Theme.metadataText)
+                            }
+                            .buttonStyle(.plain)
+
+                            Text("\(filteredItems.count) of \(manager.items.count)")
+                                .font(Theme.Typography.metadata)
+                                .foregroundStyle(Theme.metadataText)
+                        }
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
-                    .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(Theme.inputBackground, in: RoundedRectangle(cornerRadius: Theme.Radius.button, style: .continuous))
                     .padding(.horizontal, 12)
                     .padding(.bottom, 8)
                     .transition(.opacity.combined(with: .move(edge: .top)))
@@ -164,7 +174,7 @@ struct PickerView: View {
                 // Items list
                 ScrollViewReader { proxy in
                     ScrollView(.vertical, showsIndicators: false) {
-                        VStack(spacing: 4) {
+                        VStack(spacing: Theme.Spacing.itemGap) {
                             // Pinned favorites section
                             if !manager.pinnedItems.isEmpty && searchText.isEmpty {
                                 HStack(spacing: 4) {
@@ -244,16 +254,29 @@ struct PickerView: View {
                                 .transition(.opacity)
                             }
 
-                            if filteredItems.isEmpty {
+                            if filteredItems.isEmpty && !manager.items.isEmpty {
                                 VStack(spacing: 8) {
                                     Image(systemName: "magnifyingglass")
                                         .font(.system(size: 24))
-                                        .foregroundStyle(.tertiary)
+                                        .foregroundStyle(Theme.metadataText)
                                     Text("No results")
-                                        .font(.system(size: 13))
-                                        .foregroundStyle(.tertiary)
+                                        .font(Theme.Typography.body)
+                                        .foregroundStyle(Theme.metadataText)
                                 }
                                 .padding(.vertical, 24)
+                            } else if manager.items.isEmpty {
+                                VStack(spacing: 10) {
+                                    Image(systemName: "doc.on.clipboard")
+                                        .font(.system(size: 28))
+                                        .foregroundStyle(Theme.metadataText)
+                                    Text("Nothing copied yet")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundStyle(Theme.subtleText)
+                                    Text("Copy something with ⌘C to get started")
+                                        .font(Theme.Typography.caption)
+                                        .foregroundStyle(Theme.metadataText)
+                                }
+                                .padding(.vertical, 32)
                             }
                         }
                         .padding(.horizontal, 10)
@@ -289,7 +312,7 @@ struct PickerView: View {
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 5)
-                                .background(.quaternary, in: Capsule())
+                                .background(Theme.badgeFill, in: Capsule())
                         }
                         .buttonStyle(.plain)
 
@@ -317,9 +340,6 @@ struct PickerView: View {
                         footerHint(icon: "return", text: "Paste")
                         footerHint(icon: "command", text: "Click Multi")
                         Spacer()
-                        Text("\(manager.items.count) item\(manager.items.count == 1 ? "" : "s")")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.tertiary)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
@@ -327,7 +347,7 @@ struct PickerView: View {
                 }
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.window, style: .continuous))
         .onAppear {
             withAnimation {
                 appeared = true
@@ -363,9 +383,9 @@ struct PickerView: View {
             Image(systemName: icon)
                 .font(.system(size: 9))
             Text(text)
-                .font(.system(size: 10))
+                .font(Theme.Typography.metadata)
         }
-        .foregroundStyle(.tertiary)
+        .foregroundStyle(Theme.metadataText)
     }
 }
 
@@ -395,170 +415,96 @@ struct ClipboardItemRow: View {
                     Image(systemName: "checkmark")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(.white)
-                } else {
-                    // Normal index badge
+                } else if index == 0 {
+                    // Most recent — accent filled
                     Circle()
-                        .fill(index == 0 ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.08))
+                        .fill(Color.accentColor.opacity(0.18))
                         .frame(width: 26, height: 26)
-                    if item.isFile {
-                        Image(systemName: "doc")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(index == 0 ? .accentColor : .secondary)
-                    } else if item.isImage {
-                        Image(systemName: "photo")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(index == 0 ? .accentColor : .secondary)
-                    } else {
-                        Text(index < 9 ? "\(index + 1)" : "\u{2022}")
-                            .font(.system(size: 11, weight: .semibold, design: .rounded))
-                            .foregroundColor(index == 0 ? .accentColor : .secondary)
-                    }
+                    badgeContent
+                        .foregroundColor(.accentColor)
+                } else if index < 9 {
+                    // Items 1-8 — outline circle
+                    Circle()
+                        .strokeBorder(Theme.metadataText, lineWidth: 1)
+                        .frame(width: 26, height: 26)
+                    badgeContent
+                        .foregroundColor(.secondary)
+                } else {
+                    // Items 9+ — small dot
+                    Circle()
+                        .fill(Theme.metadataText)
+                        .frame(width: 6, height: 6)
                 }
             }
+            .frame(width: 26, height: 26)
 
-            // Content preview
-            if item.isFile, let icon = item.fileIcon {
-                // File row
-                HStack(spacing: 10) {
-                    Image(nsImage: icon)
-                        .resizable()
-                        .frame(width: 32, height: 32)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(item.fileName ?? "Unknown file")
-                            .font(.system(size: 13, weight: .medium))
-                            .lineLimit(1)
-
-                        HStack(spacing: 4) {
-                            if let size = item.fileSize {
-                                Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(.tertiary)
-                            }
-                            if let source = item.sourceApp {
-                                Text("\u{00B7}").foregroundStyle(.quaternary)
-                                Text(source)
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(.tertiary)
-                            }
-                            Text("\u{00B7}").foregroundStyle(.quaternary)
-                            Text(ClipboardManager.relativeTime(from: item.timestamp))
-                                .font(.system(size: 10))
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
+            // Content type indicator + preview
+            HStack(spacing: 0) {
+                // Left color bar for images/files
+                if item.isImage {
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(Color.accentColor.opacity(0.4))
+                        .frame(width: 3)
+                        .padding(.vertical, 2)
+                        .padding(.trailing, 8)
+                } else if item.isFile {
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(Color.green.opacity(0.4))
+                        .frame(width: 3)
+                        .padding(.vertical, 2)
+                        .padding(.trailing, 8)
                 }
-            } else if item.isImage, let thumbnail = item.thumbnail {
-                // Image thumbnail
-                VStack(alignment: .leading, spacing: 4) {
-                    Image(nsImage: thumbnail)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxHeight: 80)
-                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
-                        )
 
-                    HStack(spacing: 4) {
-                        if let size = item.imageSize {
-                            Text("\(Int(size.width))\u{00D7}\(Int(size.height))")
-                                .font(.system(size: 10, design: .monospaced))
-                                .foregroundStyle(.tertiary)
-                        }
-                        if let source = item.sourceApp {
-                            Text("\u{00B7}")
-                                .foregroundStyle(.quaternary)
-                            Text(source)
-                                .font(.system(size: 10))
-                                .foregroundStyle(.tertiary)
-                        }
-                        Text("\u{00B7}")
-                            .foregroundStyle(.quaternary)
-                        Text(ClipboardManager.relativeTime(from: item.timestamp))
-                            .font(.system(size: 10))
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-            } else {
-                // Text preview
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(item.preview)
-                        .font(.system(size: 13))
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                        .foregroundColor(.primary)
-                        .help(item.content.count > 80 ? String(item.content.prefix(500)) : "")
-
-                    HStack(spacing: 4) {
-                        if let source = item.sourceApp {
-                            Text(source)
-                                .font(.system(size: 10))
-                                .foregroundStyle(.tertiary)
-                        }
-                        Text(ClipboardManager.relativeTime(from: item.timestamp))
-                            .font(.system(size: 10))
-                            .foregroundStyle(.tertiary)
-                    }
+                // Content preview
+                if item.isFile, let icon = item.fileIcon {
+                    fileContent(icon: icon)
+                } else if item.isImage, let thumbnail = item.thumbnail {
+                    imageContent(thumbnail: thumbnail)
+                } else {
+                    textContent
                 }
             }
 
             Spacer()
 
-            // Action icons (always visible, brighter on hover)
-            HStack(spacing: 4) {
-                // Pin / Unpin (text items only)
-                if !item.isImage && !item.isFile {
-                    Image(systemName: isPinned ? "pin.slash.fill" : "pin.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(isPinned ? .accentColor : .secondary)
-                        .rotationEffect(.degrees(45))
-                        .frame(width: 26, height: 26)
-                        .contentShape(Rectangle())
-                        .highPriorityGesture(TapGesture().onEnded { onPin() })
+            // Action icons (visible on hover)
+            if isHighlighted || isSelected {
+                HStack(spacing: 4) {
+                    // Pin / Unpin (text items only)
+                    if !item.isImage && !item.isFile {
+                        actionButton(
+                            icon: isPinned ? "pin.slash.fill" : "pin.fill",
+                            color: isPinned ? .accentColor : .secondary,
+                            rotation: 45
+                        ) { onPin() }
+                    }
+
+                    actionButton(icon: "doc.on.doc", color: .secondary) { onSelect() }
+                    actionButton(icon: "xmark", color: .secondary, fontSize: 10, fontWeight: .semibold) { onDelete() }
                 }
-
-                Image(systemName: "doc.on.doc")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 26, height: 26)
-                    .contentShape(Rectangle())
-                    .highPriorityGesture(TapGesture().onEnded { onSelect() })
-
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 16))
-                    .foregroundStyle(.tertiary)
-                    .frame(width: 26, height: 26)
-                    .contentShape(Rectangle())
-                    .highPriorityGesture(TapGesture().onEnded { onDelete() })
+                .padding(.trailing, 2)
+                .transition(.opacity)
             }
-            .padding(.trailing, 4)
-            .opacity(isHighlighted || isSelected ? 1.0 : 0.3)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, (item.isImage || item.isFile) ? 10 : 9)
+        .padding(.horizontal, Theme.Spacing.rowHorizontal)
+        .padding(.vertical, (item.isImage || item.isFile) ? Theme.Spacing.rowVertical : 9)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous)
                 .fill(
                     isSelected
-                        ? Color.accentColor.opacity(0.15)
-                        : (isHighlighted
-                            ? (index == 0 ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.07))
-                            : Color.clear)
+                        ? Theme.rowSelected
+                        : (isHighlighted ? Theme.rowHover : Color.clear)
                 )
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous)
                 .strokeBorder(
-                    isSelected ? Color.accentColor.opacity(0.5) :
-                    (isHighlighted ? Color.accentColor.opacity(0.2) : Color.clear),
-                    lineWidth: isSelected ? 1.5 : 1
+                    isSelected ? Color.accentColor.opacity(0.4) : Color.clear,
+                    lineWidth: 1.5
                 )
         )
-        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous))
         .onTapGesture {
-            // Check if Command key is held
             if NSEvent.modifierFlags.contains(.command) {
                 onToggleSelect()
             } else {
@@ -573,6 +519,130 @@ struct ClipboardItemRow: View {
             }
             return NSItemProvider(object: item.content as NSString)
         }
+        .animation(.easeInOut(duration: 0.12), value: isHighlighted)
+    }
+
+    // MARK: - Badge Content
+
+    @ViewBuilder
+    var badgeContent: some View {
+        if item.isFile {
+            Image(systemName: "doc")
+                .font(.system(size: 11, weight: .semibold))
+        } else if item.isImage {
+            Image(systemName: "photo")
+                .font(.system(size: 11, weight: .semibold))
+        } else {
+            Text(index < 9 ? "\(index + 1)" : "\u{2022}")
+                .font(Theme.Typography.badge)
+        }
+    }
+
+    // MARK: - Content Views
+
+    @ViewBuilder
+    func fileContent(icon: NSImage) -> some View {
+        HStack(spacing: 10) {
+            Image(nsImage: icon)
+                .resizable()
+                .frame(width: 32, height: 32)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.fileName ?? "Unknown file")
+                    .font(.system(size: 13, weight: .medium))
+                    .lineLimit(1)
+
+                metadataLine(
+                    extra: item.fileSize.map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) }
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    func imageContent(thumbnail: NSImage) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Image(nsImage: thumbnail)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(maxHeight: 80)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous)
+                        .strokeBorder(Theme.cardBorder, lineWidth: 0.5)
+                )
+
+            HStack(spacing: 4) {
+                if let size = item.imageSize {
+                    Text("\(Int(size.width))\u{00D7}\(Int(size.height))")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(Theme.metadataText)
+                }
+                metadataLine()
+            }
+        }
+    }
+
+    @ViewBuilder
+    var textContent: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(item.preview)
+                .font(Theme.Typography.body)
+                .lineLimit(2)
+                .lineSpacing(2)
+                .multilineTextAlignment(.leading)
+                .foregroundColor(.primary)
+                .help(item.content.count > 80 ? String(item.content.prefix(500)) : "")
+
+            metadataLine()
+        }
+    }
+
+    // MARK: - Metadata Line
+
+    @ViewBuilder
+    func metadataLine(extra: String? = nil) -> some View {
+        HStack(spacing: 4) {
+            if let extra = extra {
+                Text(extra)
+                    .font(Theme.Typography.caption)
+                    .foregroundStyle(Theme.metadataText)
+                Text("\u{00B7}").foregroundStyle(Theme.metadataText)
+            }
+            if let source = item.sourceApp {
+                Text(source)
+                    .font(Theme.Typography.caption)
+                    .foregroundStyle(Theme.metadataText)
+                Text("\u{00B7}").foregroundStyle(Theme.metadataText)
+            }
+            Text(ClipboardManager.relativeTime(from: item.timestamp))
+                .font(Theme.Typography.metadata)
+                .foregroundStyle(Theme.metadataText)
+        }
+    }
+
+    // MARK: - Action Button
+
+    @ViewBuilder
+    func actionButton(
+        icon: String,
+        color: Color,
+        rotation: Double = 0,
+        fontSize: CGFloat = 12,
+        fontWeight: Font.Weight = .regular,
+        action: @escaping () -> Void
+    ) -> some View {
+        Image(systemName: icon)
+            .font(.system(size: fontSize, weight: fontWeight))
+            .foregroundColor(color)
+            .rotationEffect(.degrees(rotation))
+            .frame(width: 28, height: 28)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous)
+                    .fill(Theme.badgeFill)
+            )
+            .contentShape(Rectangle())
+            .highPriorityGesture(TapGesture().onEnded { action() })
     }
 }
 
@@ -601,27 +671,29 @@ struct PinnedItemRow: View {
 
             Spacer()
 
-            Button(action: onUnpin) {
-                Image(systemName: "pin.slash.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+            if isHovered {
+                Button(action: onUnpin) {
+                    Image(systemName: "pin.slash.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .transition(.opacity)
             }
-            .buttonStyle(.plain)
-            .opacity(isHovered ? 1.0 : 0.3)
-            .animation(.easeInOut(duration: 0.12), value: isHovered)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(isHovered ? Color.accentColor.opacity(0.1) : Color.clear)
+            RoundedRectangle(cornerRadius: Theme.Radius.button, style: .continuous)
+                .fill(isHovered ? Theme.rowHover : Color.clear)
         )
-        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.button, style: .continuous))
         .onHover { isHovered = $0 }
         .onTapGesture { onSelect() }
         .onDrag {
             NSItemProvider(object: snippet.content as NSString)
         }
+        .animation(.easeInOut(duration: 0.12), value: isHovered)
     }
 }
 
@@ -639,10 +711,10 @@ struct SessionTimerBadge: View {
             Text(timeLeft)
                 .font(.system(size: 10, weight: .medium, design: .rounded))
         }
-        .foregroundStyle(.tertiary)
+        .foregroundStyle(Theme.metadataText)
         .padding(.horizontal, 7)
         .padding(.vertical, 3)
-        .background(.quaternary.opacity(0.5), in: Capsule())
+        .background(Theme.badgeFill, in: Capsule())
         .onAppear {
             updateTime()
             timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { _ in

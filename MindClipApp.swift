@@ -323,8 +323,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
             settingsWindow = NSWindow(contentViewController: hostingController)
             settingsWindow?.title = "MindClip Settings"
             settingsWindow?.styleMask = [.titled, .closable, .resizable]
-            settingsWindow?.setContentSize(NSSize(width: 400, height: 460))
-            settingsWindow?.minSize = NSSize(width: 360, height: 420)
+            settingsWindow?.setContentSize(NSSize(width: 600, height: 480))
+            settingsWindow?.minSize = NSSize(width: 560, height: 440)
             settingsWindow?.isReleasedWhenClosed = false
         }
         settingsWindow?.center()

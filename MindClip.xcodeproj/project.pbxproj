@@ -19,6 +19,7 @@
 		AA000001AAAA000000000007 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA000000000009 /* HistoryView.swift */; };
 		AA000001AAAA000000000008 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA00000000000A /* AboutView.swift */; };
 		AA000001AAAA000000000009 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA00000000000B /* WelcomeView.swift */; };
+		AA000001AAAA00000000000F /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA00000000000F /* Theme.swift */; };
 		BB000001BBBB000000000001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = BB000002BBBB000000000001 /* Sparkle */; };
 /* End PBXBuildFile section */
 
@@ -37,6 +38,7 @@
 		AA000002AAAA00000000000C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA000002AAAA00000000000D /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		AA000002AAAA00000000000E /* menubar_icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = menubar_icon.png; sourceTree = "<group>"; };
+		AA000002AAAA00000000000F /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		AA000003AAAA000000000001 /* MindClip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MindClip.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -64,6 +66,7 @@
 				AA000002AAAA000000000009 /* HistoryView.swift */,
 				AA000002AAAA00000000000A /* AboutView.swift */,
 				AA000002AAAA00000000000B /* WelcomeView.swift */,
+				AA000002AAAA00000000000F /* Theme.swift */,
 				AA000002AAAA000000000007 /* Info.plist */,
 				AA000002AAAA000000000008 /* MindClip.entitlements */,
 				AA000002AAAA00000000000C /* Assets.xcassets */,
@@ -149,6 +152,7 @@
 				AA000001AAAA000000000007 /* HistoryView.swift in Sources */,
 				AA000001AAAA000000000008 /* AboutView.swift in Sources */,
 				AA000001AAAA000000000009 /* WelcomeView.swift in Sources */,
+				AA000001AAAA00000000000F /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

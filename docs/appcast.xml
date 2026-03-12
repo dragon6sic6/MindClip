@@ -5,6 +5,23 @@
         <description>Most recent changes with links to updates.</description>
         <language>en</language>
         <item>
+            <title>1.5.3</title>
+            <pubDate>Wed, 12 Mar 2026 23:30:00 +0100</pubDate>
+            <sparkle:version>8</sparkle:version>
+            <sparkle:shortVersionString>1.5.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>What's New in 1.5.3</h3>
+                <ul>
+                    <li>Redesigned Settings with sidebar navigation</li>
+                    <li>Cleaner clipboard picker — better spacing, typography, and content-type indicators</li>
+                    <li>Improved dark mode with dynamic color system</li>
+                    <li>New centralized theme system for consistent styling</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/dragon6sic6/MindClip/releases/download/v1.5.3/MindClip.dmg" length="2294376" type="application/octet-stream" sparkle:edSignature="kmbmhLsbkFCtkPwnhIUQVy42f11ZM7SrR37mVutUmWjSBLO144hcvCQtQuMa94ryL6l0I8JK0jltrreyHDWLDg=="/>
+        </item>
+        <item>
             <title>1.5.2</title>
             <pubDate>Wed, 11 Mar 2026 20:40:39 +0100</pubDate>
             <sparkle:version>7</sparkle:version>

@@ -18,16 +18,16 @@ struct HistoryView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 12))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(Theme.metadataText)
                     TextField("Search history...", text: $searchText)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 13))
+                        .font(Theme.Typography.body)
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 7)
                 .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color.primary.opacity(0.06))
+                    RoundedRectangle(cornerRadius: Theme.Radius.button, style: .continuous)
+                        .fill(Theme.inputBackground)
                 )
 
                 // Clear all
@@ -42,8 +42,8 @@ struct HistoryView: View {
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
                     .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color.red.opacity(0.1))
+                        RoundedRectangle(cornerRadius: Theme.Radius.button, style: .continuous)
+                            .fill(Theme.destructiveBackground)
                     )
                 }
                 .buttonStyle(.plain)
@@ -59,14 +59,14 @@ struct HistoryView: View {
                 VStack(spacing: 8) {
                     Image(systemName: searchText.isEmpty ? "clipboard" : "magnifyingglass")
                         .font(.system(size: 28))
-                        .foregroundStyle(.quaternary)
+                        .foregroundStyle(Theme.metadataText)
                     Text(searchText.isEmpty ? "No items yet" : "No results")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.tertiary)
+                        .font(Theme.Typography.body)
+                        .foregroundStyle(Theme.subtleText)
                     if searchText.isEmpty {
                         Text("Copy something to get started")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.quaternary)
+                            .font(Theme.Typography.caption)
+                            .foregroundStyle(Theme.metadataText)
                     }
                 }
                 Spacer()
@@ -100,8 +100,8 @@ struct HistoryView: View {
                 // Footer
                 HStack {
                     Text("\(filteredItems.count) item\(filteredItems.count == 1 ? "" : "s")")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.quaternary)
+                        .font(Theme.Typography.metadata)
+                        .foregroundStyle(Theme.metadataText)
                     Spacer()
                 }
                 .padding(.horizontal, 16)
@@ -126,6 +126,7 @@ struct HistoryRow: View {
                 Text(item.preview)
                     .font(.system(size: 12))
                     .lineLimit(2)
+                    .lineSpacing(1)
                     .foregroundStyle(.primary.opacity(isHovered ? 1.0 : 0.85))
 
                 HStack(spacing: 6) {
@@ -135,13 +136,13 @@ struct HistoryRow: View {
                                 .font(.system(size: 8))
                             Text(source)
                         }
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
+                        .font(Theme.Typography.metadata)
+                        .foregroundStyle(Theme.metadataText)
                     }
 
                     Text(item.timestamp, style: .relative)
-                        .font(.system(size: 10))
-                        .foregroundStyle(.quaternary)
+                        .font(Theme.Typography.metadata)
+                        .foregroundStyle(Theme.metadataText)
                 }
             }
 
@@ -156,8 +157,8 @@ struct HistoryRow: View {
                             .foregroundStyle(.secondary)
                             .frame(width: 28, height: 28)
                             .background(
-                                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                    .fill(Color.primary.opacity(0.08))
+                                RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous)
+                                    .fill(Theme.badgeFill)
                             )
                     }
                     .buttonStyle(.plain)
@@ -166,11 +167,11 @@ struct HistoryRow: View {
                     Button(action: onDelete) {
                         Image(systemName: "xmark")
                             .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(Theme.metadataText)
                             .frame(width: 28, height: 28)
                             .background(
-                                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                    .fill(Color.primary.opacity(0.08))
+                                RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous)
+                                    .fill(Theme.badgeFill)
                             )
                     }
                     .buttonStyle(.plain)
@@ -182,10 +183,11 @@ struct HistoryRow: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(isHovered ? Color.primary.opacity(0.06) : Color.clear)
+            RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous)
+                .fill(isHovered ? Theme.rowHover : Color.clear)
         )
         .contentShape(Rectangle())
         .onTapGesture { onCopy() }
+        .animation(.easeInOut(duration: 0.12), value: isHovered)
     }
 }
