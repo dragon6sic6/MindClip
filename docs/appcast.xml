@@ -5,6 +5,20 @@
         <description>Most recent changes with links to updates.</description>
         <language>en</language>
         <item>
+            <title>1.7.2</title>
+            <pubDate>Sat, 15 Mar 2026 00:00:00 +0100</pubDate>
+            <sparkle:version>13</sparkle:version>
+            <sparkle:shortVersionString>1.7.2</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>What's New in 1.7.2</h3>
+                <ul>
+                    <li>Unified styling — snippets and pins now match clipboard rows (font sizes, hover icons, spacing)</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/dragon6sic6/MindClip/releases/download/v1.7.2/MindClip.dmg" length="2671096" type="application/octet-stream" sparkle:edSignature="d7nJ1tzKZYLvCzmsb0awBip4u2YxilK6W8ct+0WxiU3d6S5kmLTHCMKEDpIt7WAJTXnkaI3iPgw8q9/qXHJRBA=="/>
+        </item>
+        <item>
             <title>1.7.1</title>
             <pubDate>Fri, 14 Mar 2026 23:00:00 +0100</pubDate>
             <sparkle:version>12</sparkle:version>

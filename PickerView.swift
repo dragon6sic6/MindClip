@@ -1146,37 +1146,42 @@ struct QuickPinRow: View {
     @State private var isHovered = false
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Image(systemName: "pin.fill")
-                .font(.system(size: 10))
+                .font(.system(size: 11))
                 .foregroundColor(.accentColor)
                 .rotationEffect(.degrees(45))
 
             Text(String(pin.content.prefix(80)).trimmingCharacters(in: .whitespacesAndNewlines))
-                .font(.system(size: 12))
+                .font(Theme.Typography.body)
                 .lineLimit(1)
-                .foregroundColor(.primary.opacity(0.85))
+                .foregroundColor(.primary)
                 .help(pin.content.count > 50 ? String(pin.content.prefix(500)) : "")
 
             Spacer()
 
             if isHovered {
-                Button(action: onUnpin) {
-                    Image(systemName: "pin.slash.fill")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .transition(.opacity)
+                Image(systemName: "pin.slash.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                    .frame(width: 28, height: 28)
+                    .background(
+                        RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous)
+                            .fill(Theme.badgeFill)
+                    )
+                    .contentShape(Rectangle())
+                    .highPriorityGesture(TapGesture().onEnded { onUnpin() })
+                    .padding(.trailing, 2)
+                    .transition(.opacity)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, Theme.Spacing.rowHorizontal)
+        .padding(.vertical, 9)
         .background(
-            RoundedRectangle(cornerRadius: Theme.Radius.button, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous)
                 .fill(isHovered ? Theme.rowHover : Color.clear)
         )
-        .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.button, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous))
         .onHover { isHovered = $0 }
         .onTapGesture { onSelect() }
         .onDrag {
@@ -1196,20 +1201,20 @@ struct SnippetRow: View {
     @State private var isHovered = false
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Image(systemName: "text.quote")
-                .font(.system(size: 10))
+                .font(.system(size: 11))
                 .foregroundColor(.orange)
 
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(snippet.title)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
-                    .foregroundColor(.primary.opacity(0.85))
+                    .foregroundColor(.primary)
 
                 if snippet.title != String(snippet.content.prefix(50)).trimmingCharacters(in: .whitespacesAndNewlines) {
                     Text(String(snippet.content.prefix(60)))
-                        .font(.system(size: 10))
+                        .font(Theme.Typography.caption)
                         .lineLimit(1)
                         .foregroundStyle(Theme.metadataText)
                 }
@@ -1220,35 +1225,45 @@ struct SnippetRow: View {
 
             if isHovered {
                 HStack(spacing: 4) {
-                    Button(action: onEdit) {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(.orange)
-                    }
-                    .buttonStyle(.plain)
-
-                    Button(action: onRemove) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
+                    snippetActionButton(icon: "pencil", color: .orange) { onEdit() }
+                    snippetActionButton(icon: "xmark", color: .secondary, fontSize: 10, fontWeight: .semibold) { onRemove() }
                 }
+                .padding(.trailing, 2)
                 .transition(.opacity)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, Theme.Spacing.rowHorizontal)
+        .padding(.vertical, 9)
         .background(
-            RoundedRectangle(cornerRadius: Theme.Radius.button, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous)
                 .fill(isHovered ? Theme.rowHover : Color.clear)
         )
-        .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.button, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous))
         .onHover { isHovered = $0 }
         .onTapGesture { onSelect() }
         .onDrag {
             NSItemProvider(object: snippet.content as NSString)
         }
+    }
+
+    @ViewBuilder
+    func snippetActionButton(
+        icon: String,
+        color: Color,
+        fontSize: CGFloat = 12,
+        fontWeight: Font.Weight = .regular,
+        action: @escaping () -> Void
+    ) -> some View {
+        Image(systemName: icon)
+            .font(.system(size: fontSize, weight: fontWeight))
+            .foregroundColor(color)
+            .frame(width: 28, height: 28)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous)
+                    .fill(Theme.badgeFill)
+            )
+            .contentShape(Rectangle())
+            .highPriorityGesture(TapGesture().onEnded { action() })
     }
 }
 
