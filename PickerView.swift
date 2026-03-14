@@ -39,6 +39,9 @@ struct PickerView: View {
     @State private var showSaveSnippetEditor = false
     @State private var saveSnippetTitle = ""
     @State private var saveSnippetContent = ""
+    @State private var editingSnippetId: UUID? = nil
+    @State private var editSnippetTitle = ""
+    @State private var editSnippetContent = ""
 
     var isMultiSelectMode: Bool { !selectedIds.isEmpty }
 
@@ -392,6 +395,97 @@ struct PickerView: View {
                 }
                 .transition(.opacity)
             }
+
+            // Edit snippet overlay
+            if editingSnippetId != nil {
+                ZStack {
+                    Color.black.opacity(0.3)
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.window, style: .continuous))
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                editingSnippetId = nil
+                            }
+                        }
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 14))
+                                .foregroundColor(.orange)
+                            Text("Edit Snippet")
+                                .font(.system(size: 14, weight: .semibold))
+                            Spacer()
+                        }
+
+                        TextField("Snippet name", text: $editSnippetTitle)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 13))
+                            .padding(10)
+                            .background(Theme.inputBackground, in: RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous))
+
+                        ZStack(alignment: .topLeading) {
+                            if editSnippetContent.isEmpty {
+                                Text("Content...")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Theme.metadataText)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 10)
+                                    .allowsHitTesting(false)
+                            }
+                            TextEditor(text: $editSnippetContent)
+                                .font(.system(size: 12))
+                                .scrollContentBackground(.hidden)
+                                .padding(6)
+                        }
+                        .frame(minHeight: 80, maxHeight: 140)
+                        .background(Theme.inputBackground, in: RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous))
+
+                        HStack(spacing: 8) {
+                            Spacer()
+                            Button("Cancel") {
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    editingSnippetId = nil
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+
+                            Button("Save") {
+                                if let id = editingSnippetId {
+                                    let title = editSnippetTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    let content = editSnippetContent.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    guard !content.isEmpty else { return }
+                                    let finalTitle = title.isEmpty ? String(content.prefix(50)) : title
+                                    manager.updateSnippet(id: id, title: finalTitle, content: content)
+                                }
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    editingSnippetId = nil
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 6)
+                            .background(Color.accentColor, in: Capsule())
+                            .disabled(editSnippetContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+                    }
+                    .padding(20)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(.windowBackgroundColor))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(Theme.cardBorder, lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.2), radius: 16, x: 0, y: 4)
+                    .padding(24)
+                }
+                .transition(.opacity)
+            }
         }
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.window, style: .continuous))
         .onAppear {
@@ -672,6 +766,13 @@ struct PickerView: View {
                         snippet: snippet,
                         onSelect: {
                             onSelect(ClipboardItem(content: snippet.content))
+                        },
+                        onEdit: {
+                            editSnippetTitle = snippet.title
+                            editSnippetContent = snippet.content
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                editingSnippetId = snippet.id
+                            }
                         },
                         onRemove: {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -1089,6 +1190,7 @@ struct QuickPinRow: View {
 struct SnippetRow: View {
     let snippet: PinnedSnippet
     var onSelect: () -> Void
+    var onEdit: () -> Void
     var onRemove: () -> Void
 
     @State private var isHovered = false
@@ -1117,12 +1219,21 @@ struct SnippetRow: View {
             Spacer()
 
             if isHovered {
-                Button(action: onRemove) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Button(action: onEdit) {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.orange)
+                    }
+                    .buttonStyle(.plain)
+
+                    Button(action: onRemove) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
                 .transition(.opacity)
             }
         }
