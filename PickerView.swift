@@ -138,6 +138,9 @@ struct PickerView: View {
                     }
                     .buttonStyle(.plain)
 
+                    // Appearance toggle button
+                    appearanceToggleButton
+
                     // Settings button
                     Button(action: {
                         onDismiss()
@@ -547,6 +550,44 @@ struct PickerView: View {
             .background(isActive ? Color.accentColor : Color.clear, in: Capsule())
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - Appearance Toggle
+
+    private var appearanceIconName: String {
+        switch manager.appearanceMode {
+        case .system: return "circle.lefthalf.filled"
+        case .light: return "sun.max.fill"
+        case .dark: return "moon.fill"
+        }
+    }
+
+    private var appearanceTooltip: String {
+        switch manager.appearanceMode {
+        case .system: return "Theme: System"
+        case .light: return "Theme: Light"
+        case .dark: return "Theme: Dark"
+        }
+    }
+
+    private var appearanceToggleButton: some View {
+        Button(action: {
+            let modes: [AppearanceMode] = [.system, .light, .dark]
+            if let idx = modes.firstIndex(of: manager.appearanceMode) {
+                manager.appearanceMode = modes[(idx + 1) % modes.count]
+            } else {
+                manager.appearanceMode = .system
+            }
+            manager.saveSettings()
+            manager.applyAppearance()
+        }) {
+            Image(systemName: appearanceIconName)
+                .font(.system(size: 14))
+                .foregroundStyle(manager.appearanceMode == .system ? Color.secondary : Color.accentColor)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .help(appearanceTooltip)
     }
 
     // MARK: - Clipboard Tab Content
