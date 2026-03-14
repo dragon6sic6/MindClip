@@ -635,6 +635,9 @@ struct PickerView: View {
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     showSaveSnippetEditor = true
                                 }
+                            },
+                            onPastePlain: {
+                                onSelect(ClipboardItem(content: item.content))
                             }
                         )
                         .id(item.id)
@@ -863,6 +866,7 @@ struct ClipboardItemRow: View {
     var onDelete: () -> Void
     var onPin: () -> Void
     var onSaveSnippet: (() -> Void)? = nil
+    var onPastePlain: (() -> Void)? = nil
 
     @State private var showDelete = false
 
@@ -946,6 +950,7 @@ struct ClipboardItemRow: View {
                             color: isPinned ? .accentColor : .secondary,
                             rotation: 45
                         ) { onPin() }
+                            .help(isPinned ? "Unpin" : "Pin")
 
                         // Save as snippet
                         if let onSaveSnippet = onSaveSnippet {
@@ -953,11 +958,23 @@ struct ClipboardItemRow: View {
                                 icon: "text.quote",
                                 color: .orange
                             ) { onSaveSnippet() }
+                                .help("Save as Snippet")
+                        }
+
+                        // Paste as plain text
+                        if let onPastePlain = onPastePlain {
+                            actionButton(
+                                icon: "doc.plaintext",
+                                color: .secondary
+                            ) { onPastePlain() }
+                                .help("Paste as Plain Text")
                         }
                     }
 
                     actionButton(icon: "doc.on.doc", color: .secondary) { onSelect() }
+                        .help("Paste")
                     actionButton(icon: "xmark", color: .secondary, fontSize: 10, fontWeight: .semibold) { onDelete() }
+                        .help("Remove")
                 }
                 .padding(.trailing, 2)
                 .transition(.opacity)
@@ -1171,6 +1188,7 @@ struct QuickPinRow: View {
                     )
                     .contentShape(Rectangle())
                     .highPriorityGesture(TapGesture().onEnded { onUnpin() })
+                    .help("Unpin")
                     .padding(.trailing, 2)
                     .transition(.opacity)
             }
@@ -1226,7 +1244,9 @@ struct SnippetRow: View {
             if isHovered {
                 HStack(spacing: 4) {
                     snippetActionButton(icon: "pencil", color: .orange) { onEdit() }
+                        .help("Edit Snippet")
                     snippetActionButton(icon: "xmark", color: .secondary, fontSize: 10, fontWeight: .semibold) { onRemove() }
+                        .help("Remove")
                 }
                 .padding(.trailing, 2)
                 .transition(.opacity)

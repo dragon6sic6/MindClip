@@ -5,6 +5,21 @@
         <description>Most recent changes with links to updates.</description>
         <language>en</language>
         <item>
+            <title>1.7.4</title>
+            <pubDate>Sat, 15 Mar 2026 03:00:00 +0100</pubDate>
+            <sparkle:version>15</sparkle:version>
+            <sparkle:shortVersionString>1.7.4</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>What's New in 1.7.4</h3>
+                <ul>
+                    <li>Paste as Plain Text button — strip formatting directly from the picker</li>
+                    <li>Tooltips on all hover action buttons — Pin, Save as Snippet, Paste, Remove, etc.</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/dragon6sic6/MindClip/releases/download/v1.7.4/MindClip.dmg" length="2673831" type="application/octet-stream" sparkle:edSignature="QFb0QZrHhgcvGrRxbh3o81XtjzWhnL+QpKBVjhb7Utqwo1tUI1fW8MEDaHOIAzZuIex7PkFaGVZv7YIVC0z9Cw=="/>
+        </item>
+        <item>
             <title>1.7.3</title>
             <pubDate>Sat, 15 Mar 2026 01:00:00 +0100</pubDate>
             <sparkle:version>14</sparkle:version>
