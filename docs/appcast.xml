@@ -5,6 +5,20 @@
         <description>Most recent changes with links to updates.</description>
         <language>en</language>
         <item>
+            <title>1.7.3</title>
+            <pubDate>Sat, 15 Mar 2026 01:00:00 +0100</pubDate>
+            <sparkle:version>14</sparkle:version>
+            <sparkle:shortVersionString>1.7.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>What's New in 1.7.3</h3>
+                <ul>
+                    <li>Color menu bar icon — the coral folder with M now shows in full color</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/dragon6sic6/MindClip/releases/download/v1.7.3/MindClip.dmg" length="2671633" type="application/octet-stream" sparkle:edSignature="f3RNx2E1SVILIaz515EbniBlioBgBWhO6mYGpF5DQx0DJ8gRY0aTZFCr+TaZbetQEr8C+klbl7TfsKvnsVdSAQ=="/>
+        </item>
+        <item>
             <title>1.7.2</title>
             <pubDate>Sat, 15 Mar 2026 00:00:00 +0100</pubDate>
             <sparkle:version>13</sparkle:version>

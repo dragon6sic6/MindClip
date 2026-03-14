@@ -145,18 +145,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     private func updateMenuBarIcon() {
         guard let button = statusItem?.button else { return }
-        guard let iconPath = Bundle.main.path(forResource: "menubar_icon", ofType: "png"),
+
+        // Use color icon (app icon style) as default
+        guard let iconPath = Bundle.main.path(forResource: "menubar_icon_color", ofType: "png"),
               let icon = NSImage(contentsOfFile: iconPath) else {
-            button.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "MindClip")
-            button.image?.isTemplate = true
+            // Fallback to monochrome template icon
+            if let monoPath = Bundle.main.path(forResource: "menubar_icon", ofType: "png"),
+               let monoIcon = NSImage(contentsOfFile: monoPath) {
+                monoIcon.size = NSSize(width: 18, height: 18)
+                monoIcon.isTemplate = true
+                button.image = monoIcon
+            } else {
+                button.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "MindClip")
+                button.image?.isTemplate = true
+            }
             return
         }
-        icon.size = NSSize(width: 18, height: 18)
-        icon.isTemplate = true
+        icon.size = NSSize(width: 20, height: 20)
+        icon.isTemplate = false  // Color icon — not a template
 
         if updateAvailable {
             // Composite icon with red update dot in upper-right corner
-            let badged = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { rect in
+            let badged = NSImage(size: NSSize(width: 20, height: 20), flipped: false) { rect in
                 icon.draw(in: rect)
                 NSColor.systemRed.setFill()
                 let dotSize: CGFloat = 6
@@ -165,7 +175,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
                 NSBezierPath(ovalIn: dot).fill()
                 return true
             }
-            badged.isTemplate = false  // Must be non-template to show color
+            badged.isTemplate = false
             button.image = badged
         } else {
             button.image = icon

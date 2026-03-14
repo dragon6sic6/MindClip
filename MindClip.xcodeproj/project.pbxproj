@@ -10,6 +10,7 @@
 		AA000001AAAA00000000000A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA00000000000C /* Assets.xcassets */; };
 		AA000001AAAA00000000000B /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA00000000000D /* AppIcon.icns */; };
 		AA000001AAAA00000000000E /* menubar_icon.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA00000000000E /* menubar_icon.png */; };
+		AA000001AAAA000000000010 /* menubar_icon_color.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA000000000010 /* menubar_icon_color.png */; };
 		AA000001AAAA000000000001 /* MindClipApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA000000000001 /* MindClipApp.swift */; };
 		AA000001AAAA000000000002 /* ClipboardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA000000000002 /* ClipboardManager.swift */; };
 		AA000001AAAA000000000003 /* KeyboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA000000000003 /* KeyboardMonitor.swift */; };
@@ -38,6 +39,7 @@
 		AA000002AAAA00000000000C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA000002AAAA00000000000D /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		AA000002AAAA00000000000E /* menubar_icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = menubar_icon.png; sourceTree = "<group>"; };
+		AA000002AAAA000000000010 /* menubar_icon_color.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = menubar_icon_color.png; sourceTree = "<group>"; };
 		AA000002AAAA00000000000F /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		AA000003AAAA000000000001 /* MindClip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MindClip.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -72,6 +74,7 @@
 				AA000002AAAA00000000000C /* Assets.xcassets */,
 				AA000002AAAA00000000000D /* AppIcon.icns */,
 				AA000002AAAA00000000000E /* menubar_icon.png */,
+				AA000002AAAA000000000010 /* menubar_icon_color.png */,
 				AA000005AAAA000000000002 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -166,6 +169,7 @@
 				AA000001AAAA00000000000A /* Assets.xcassets in Resources */,
 				AA000001AAAA00000000000B /* AppIcon.icns in Resources */,
 				AA000001AAAA00000000000E /* menubar_icon.png in Resources */,
+				AA000001AAAA000000000010 /* menubar_icon_color.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
