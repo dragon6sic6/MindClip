@@ -21,7 +21,7 @@ Built by **Mindact**.
 - **Image support** - Copies of images, screenshots, and photos all appear in the picker with thumbnails
 - **Quick picker** - Hold `⌘V` to browse and select from history
 - **Quick pins** - Temporarily pin items to the top of the picker for easy access during your session
-- **Snippets** - Save reusable text snippets with custom names, accessible from a dedicated Snippets tab in the picker
+- **Snippets** - Save reusable text snippets with custom names, edit them anytime, accessible from a dedicated Snippets tab in the picker
 - **Merge items** - Select multiple clipboard items and merge them into one (`⌘M`)
 - **Drag & drop** - Drag any item from the picker directly into another app
 - **Keyboard navigation** - Arrow keys to navigate, Enter to paste, 1-9 for quick paste
@@ -35,6 +35,7 @@ Built by **Mindact**.
 - **Appearance mode** - System, Light, or Dark — the picker and settings follow your choice
 - **Quick settings** - Access settings directly from the picker via the gear icon
 - **Launch at login** - Optional auto-start when you log in
+- **Auto-updates** - Automatic update checks powered by Sparkle
 - **Lightweight** - No dock icon, no background noise, just a menu bar icon
 
 ## Install
