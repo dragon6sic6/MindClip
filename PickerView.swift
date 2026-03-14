@@ -12,6 +12,7 @@ class PickerNavState: ObservableObject {
     @Published var selectAllTrigger = false
     @Published var pasteSelectedTrigger = false
     @Published var deselectAllTrigger = false
+    @Published var mergeTrigger = false
 }
 
 struct PickerView: View {
@@ -19,6 +20,7 @@ struct PickerView: View {
     @ObservedObject var navState: PickerNavState
     var onSelect: (ClipboardItem) -> Void
     var onPasteMultiple: (([ClipboardItem]) -> Void)? = nil
+    var onMerge: (([ClipboardItem]) -> Void)? = nil
     var onDismiss: () -> Void
     var onOpenSettings: (() -> Void)? = nil
 
@@ -316,6 +318,27 @@ struct PickerView: View {
                         }
                         .buttonStyle(.plain)
 
+                        // Merge button — only for 2+ text items
+                        if selectedItems.filter({ !$0.isImage && !$0.isFile }).count >= 2 {
+                            Button(action: {
+                                let items = selectedItems
+                                selectedIds.removeAll()
+                                onMerge?(items)
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "arrow.triangle.merge")
+                                        .font(.system(size: 11))
+                                    Text("Merge")
+                                        .font(.system(size: 11, weight: .medium))
+                                }
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(Theme.badgeFill, in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        }
+
                         Button(action: {
                             let items = selectedItems
                             selectedIds.removeAll()
@@ -374,6 +397,13 @@ struct PickerView: View {
             let items = selectedItems
             selectedIds.removeAll()
             onPasteMultiple?(items)
+        }
+        .onChange(of: navState.mergeTrigger) { _ in
+            guard isMultiSelectMode else { return }
+            let textItems = selectedItems.filter { !$0.isImage && !$0.isFile }
+            guard textItems.count >= 2 else { return }
+            selectedIds.removeAll()
+            onMerge?(textItems)
         }
     }
 
@@ -440,8 +470,14 @@ struct ClipboardItemRow: View {
 
             // Content type indicator + preview
             HStack(spacing: 0) {
-                // Left color bar for images/files
-                if item.isImage {
+                // Left color bar for images/files/merged
+                if item.isMerged {
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(Theme.mergedAccent.opacity(0.6))
+                        .frame(width: 3)
+                        .padding(.vertical, 2)
+                        .padding(.trailing, 8)
+                } else if item.isImage {
                     RoundedRectangle(cornerRadius: 1.5)
                         .fill(Color.accentColor.opacity(0.4))
                         .frame(width: 3)
@@ -602,13 +638,26 @@ struct ClipboardItemRow: View {
     @ViewBuilder
     func metadataLine(extra: String? = nil) -> some View {
         HStack(spacing: 4) {
+            if item.isMerged {
+                HStack(spacing: 3) {
+                    Image(systemName: "link")
+                        .font(.system(size: 8, weight: .semibold))
+                    Text("Merged \(item.mergedCount)")
+                        .font(.system(size: 9, weight: .semibold))
+                }
+                .foregroundColor(Theme.mergedAccent)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Theme.mergedBadgeBackground, in: Capsule())
+                Text("\u{00B7}").foregroundStyle(Theme.metadataText)
+            }
             if let extra = extra {
                 Text(extra)
                     .font(Theme.Typography.caption)
                     .foregroundStyle(Theme.metadataText)
                 Text("\u{00B7}").foregroundStyle(Theme.metadataText)
             }
-            if let source = item.sourceApp {
+            if let source = item.sourceApp, !item.isMerged {
                 Text(source)
                     .font(Theme.Typography.caption)
                     .foregroundStyle(Theme.metadataText)

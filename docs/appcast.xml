@@ -5,6 +5,22 @@
         <description>Most recent changes with links to updates.</description>
         <language>en</language>
         <item>
+            <title>1.6.0</title>
+            <pubDate>Fri, 14 Mar 2026 18:00:00 +0100</pubDate>
+            <sparkle:version>10</sparkle:version>
+            <sparkle:shortVersionString>1.6.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>What's New in 1.6.0</h3>
+                <ul>
+                    <li>Merge/Combine — select multiple items and merge them into one (⌘M)</li>
+                    <li>Merged items are clearly marked with an amber badge and color bar</li>
+                    <li>Improved dark mode contrast for merged item indicators</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/dragon6sic6/MindClip/releases/download/v1.6.0/MindClip.dmg" length="2314594" type="application/octet-stream" sparkle:edSignature="Uf2iiugwSI1NrffbTgRaA+cTE2ARk5uyC7BCkcQlWwj16sNHsKm6npTQp8UqDOn3qxGtErlSMQyiW3n2H2DxCQ=="/>
+        </item>
+        <item>
             <title>1.5.4</title>
             <pubDate>Wed, 12 Mar 2026 23:55:00 +0100</pubDate>
             <sparkle:version>9</sparkle:version>

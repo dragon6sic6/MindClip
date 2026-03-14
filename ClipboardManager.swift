@@ -112,6 +112,8 @@ struct ClipboardItem: Identifiable, Equatable {
     var image: NSImage?
     var thumbnail: NSImage?
     var imageSize: NSSize?
+    var isMerged: Bool = false
+    var mergedCount: Int = 0
     var isFile: Bool = false
     var fileURL: URL?
     var fileName: String?
@@ -723,5 +725,38 @@ class ClipboardManager: ObservableObject {
 
     func isPinned(content: String) -> Bool {
         pinnedItems.contains { $0.content == content }
+    }
+
+    // MARK: - Merge Items
+
+    /// Merge multiple clipboard items into a single text item.
+    /// Only text items are merged; images and files are skipped.
+    /// Items are sorted oldest → newest so the merged result reads chronologically.
+    /// Returns the new merged item, or nil if no text items were provided.
+    @discardableResult
+    func mergeItems(_ itemsToMerge: [ClipboardItem], separator: String = "\n") -> ClipboardItem? {
+        let textItems = itemsToMerge.filter { !$0.isImage && !$0.isFile }
+        guard textItems.count >= 2 else {
+            // Need at least 2 text items to merge
+            return textItems.first
+        }
+
+        // Sort oldest → newest for natural reading order
+        let sorted = textItems.sorted { $0.timestamp < $1.timestamp }
+        let mergedContent = sorted.map { $0.content }.joined(separator: separator)
+
+        var newItem = ClipboardItem(content: mergedContent, sourceApp: "MindClip")
+        newItem.isMerged = true
+        newItem.mergedCount = textItems.count
+
+        DispatchQueue.main.async {
+            self.items.insert(newItem, at: 0)
+            self.addToMenuBarHistory(newItem)
+            if self.items.count > self.maxRemember {
+                self.items = Array(self.items.prefix(self.maxRemember))
+            }
+        }
+
+        return newItem
     }
 }

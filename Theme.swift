@@ -65,6 +65,15 @@ enum Theme {
             : NSColor.systemRed.withAlphaComponent(0.10)
     }))
 
+    /// Merged item accent — amber/orange, high contrast in dark mode
+    static let mergedAccent = Color(nsColor: NSColor.systemOrange)
+
+    static let mergedBadgeBackground = Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+        appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            ? NSColor.systemOrange.withAlphaComponent(0.18)
+            : NSColor.systemOrange.withAlphaComponent(0.12)
+    }))
+
     // MARK: - Corner Radii
 
     enum Radius {

@@ -40,6 +40,8 @@ class PickerWindow: NSObject {
             self?.selectItem(item)
         }, onPasteMultiple: { [weak self] items in
             self?.selectMultipleItems(items)
+        }, onMerge: { [weak self] items in
+            self?.mergeSelectedItems(items)
         }, onDismiss: { [weak self] in
             self?.dismiss()
         }, onOpenSettings: {
@@ -80,6 +82,8 @@ class PickerWindow: NSObject {
             self?.selectItem(item)
         }, onPasteMultiple: { [weak self] items in
             self?.selectMultipleItems(items)
+        }, onMerge: { [weak self] items in
+            self?.mergeSelectedItems(items)
         }, onDismiss: { [weak self] in
             self?.dismiss()
         }, onOpenSettings: {
@@ -162,6 +166,11 @@ class PickerWindow: NSObject {
             if hasCommand {
                 // ⌘A — select all
                 navState.selectAllTrigger.toggle()
+            }
+        case 46: // M key
+            if hasCommand {
+                // ⌘M — merge selected items
+                navState.mergeTrigger.toggle()
             }
         case 36: // Enter / Return
             if hasCommand {
@@ -261,6 +270,15 @@ class PickerWindow: NSObject {
 
         // Show toast
         showToast("Pasted \(items.count) items")
+    }
+
+    private func mergeSelectedItems(_ items: [ClipboardItem]) {
+        let textItems = items.filter { !$0.isImage && !$0.isFile }
+        guard textItems.count >= 2 else { return }
+        NSLog("MindClip: mergeSelectedItems — \(textItems.count) text items")
+
+        ClipboardManager.shared.mergeItems(textItems)
+        showToast("Merged \(textItems.count) items")
     }
 
     private var toastWindow: NSWindow?
