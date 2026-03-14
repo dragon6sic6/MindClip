@@ -32,9 +32,22 @@ struct AboutView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
-                .padding(.bottom, 12)
+
+            Button(action: {
+                NotificationCenter.default.post(name: .showQuickGuide, object: nil)
+            }) {
+                HStack(spacing: 5) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 10))
+                    Text("How to Use")
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .foregroundColor(.accentColor)
+            }
+            .buttonStyle(.plain)
+            .padding(.bottom, 12)
         }
-        .frame(width: 300, height: 260)
+        .frame(width: 300, height: 280)
         .background(Color(.windowBackgroundColor))
     }
 }

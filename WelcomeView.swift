@@ -5,11 +5,15 @@ struct WelcomeView: View {
 
     @State private var waitingForPermission = false
     @State private var permissionGranted = false
+    @State private var showGuide = false
     @State private var pollTimer: Timer?
 
     var body: some View {
         VStack(spacing: 0) {
-            if permissionGranted {
+            if showGuide {
+                // MARK: - Quick Guide
+                QuickGuideView(onDismiss: { onGetStarted() })
+            } else if permissionGranted {
                 // MARK: - All set
                 readyContent
             } else if waitingForPermission {
@@ -141,7 +145,7 @@ struct WelcomeView: View {
         }
     }
 
-    // MARK: - All set (step 3)
+    // MARK: - All set (step 3) — brief checkmark, then guide
 
     private var readyContent: some View {
         VStack(spacing: 16) {
@@ -154,13 +158,19 @@ struct WelcomeView: View {
             Text("You're all set!")
                 .font(.system(size: 22, weight: .bold))
 
-            Text("MindClip is running in your menu bar.\nHold ⌘V to open the clipboard picker.")
+            Text("MindClip is running in your menu bar.")
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .lineSpacing(2)
 
             Spacer()
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showGuide = true
+                }
+            }
         }
     }
 
@@ -173,10 +183,9 @@ struct WelcomeView: View {
         )
 
         if trusted {
-            // Already granted (e.g. re-install)
-            permissionGranted = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                onGetStarted()
+            // Already granted (e.g. re-install) — skip straight to guide
+            withAnimation(.easeInOut(duration: 0.3)) {
+                showGuide = true
             }
         } else {
             withAnimation(.easeInOut(duration: 0.3)) {
@@ -196,9 +205,6 @@ struct WelcomeView: View {
                 timer.invalidate()
                 withAnimation(.easeInOut(duration: 0.3)) {
                     permissionGranted = true
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    onGetStarted()
                 }
             }
         }

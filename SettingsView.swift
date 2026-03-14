@@ -668,6 +668,27 @@ struct SettingsView: View {
                 .font(Theme.Typography.settingsDescription)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+
+            Divider().opacity(0.3)
+
+            Button(action: {
+                NotificationCenter.default.post(name: .showQuickGuide, object: nil)
+            }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 11))
+                    Text("How to Use MindClip")
+                        .font(.system(size: 12, weight: .medium))
+                }
+                .foregroundColor(.accentColor)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: Theme.Radius.button, style: .continuous)
+                        .fill(Color.accentColor.opacity(0.1))
+                )
+            }
+            .buttonStyle(.plain)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)

@@ -7,6 +7,7 @@ import Sparkle
 
 extension Notification.Name {
     static let openSettings = Notification.Name("MindClipOpenSettings")
+    static let showQuickGuide = Notification.Name("MindClipShowQuickGuide")
 }
 
 extension NSImage {
@@ -38,6 +39,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     var settingsWindow: NSWindow?
     var aboutWindow: NSWindow?
     var welcomeWindow: NSWindow?
+    var guideWindow: NSWindow?
     private var historyItems: [NSMenuItem] = []
     private var accessibilityCheckTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
@@ -96,6 +98,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
         // Listen for settings open request from picker
         NotificationCenter.default.addObserver(self, selector: #selector(openSettings), name: .openSettings, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(showQuickGuide), name: .showQuickGuide, object: nil)
 
         if !hasCompletedOnboarding {
             showWelcome()
@@ -307,6 +310,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         aboutItem.target = self
         menu.addItem(aboutItem)
 
+        let guideItem = NSMenuItem(title: "How to Use MindClip", action: #selector(showQuickGuide), keyEquivalent: "")
+        guideItem.target = self
+        menu.addItem(guideItem)
+
         let checkForUpdatesItem = NSMenuItem(title: "Check for Updates...", action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)), keyEquivalent: "")
         checkForUpdatesItem.target = updaterController
         menu.addItem(checkForUpdatesItem)
@@ -374,12 +381,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         welcomeWindow = NSWindow(contentViewController: hostingController)
         welcomeWindow?.title = "Welcome to MindClip"
         welcomeWindow?.styleMask = [.titled, .closable]
-        welcomeWindow?.setContentSize(NSSize(width: 400, height: 520))
+        welcomeWindow?.setContentSize(NSSize(width: 440, height: 560))
         welcomeWindow?.isReleasedWhenClosed = false
         welcomeWindow?.center()
         welcomeWindow?.makeKeyAndOrderFront(nil)
     }
 
+
+    @objc func showQuickGuide() {
+        if guideWindow == nil {
+            let guideView = QuickGuideView(onDismiss: { [weak self] in
+                self?.guideWindow?.close()
+                self?.guideWindow = nil
+            })
+            let hostingController = NSHostingController(rootView: guideView)
+            guideWindow = NSWindow(contentViewController: hostingController)
+            guideWindow?.title = "How to Use MindClip"
+            guideWindow?.styleMask = [.titled, .closable]
+            guideWindow?.setContentSize(NSSize(width: 440, height: 520))
+            guideWindow?.isReleasedWhenClosed = false
+        }
+        guideWindow?.center()
+        guideWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
 
     @objc func historyItemClicked(_ sender: NSMenuItem) {
         let index = sender.tag
