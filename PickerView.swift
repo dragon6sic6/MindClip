@@ -24,11 +24,21 @@ struct PickerView: View {
     var onDismiss: () -> Void
     var onOpenSettings: (() -> Void)? = nil
 
+    enum PickerTab { case clipboard, snippets }
+
     @State private var hoveredId: UUID? = nil
     @State private var appeared = false
     @State private var searchText = ""
     @State private var showSearch = false
     @State private var selectedIds: Set<UUID> = []
+    @State private var activeTab: PickerTab = .clipboard
+    @State private var snippetSavedFlash = false
+    @State private var isAddingSnippetInline = false
+    @State private var inlineSnippetTitle = ""
+    @State private var inlineSnippetContent = ""
+    @State private var showSaveSnippetEditor = false
+    @State private var saveSnippetTitle = ""
+    @State private var saveSnippetContent = ""
 
     var isMultiSelectMode: Bool { !selectedIds.isEmpty }
 
@@ -43,6 +53,21 @@ struct PickerView: View {
             } else {
                 return $0.preview.localizedCaseInsensitiveContains(searchText)
             }
+        }
+    }
+
+    var filteredPins: [QuickPin] {
+        if searchText.isEmpty { return manager.quickPins }
+        return manager.quickPins.filter {
+            $0.content.localizedCaseInsensitiveContains(searchText)
+        }
+    }
+
+    var filteredSnippets: [PinnedSnippet] {
+        if searchText.isEmpty { return manager.pinnedItems }
+        return manager.pinnedItems.filter {
+            $0.title.localizedCaseInsensitiveContains(searchText)
+            || $0.content.localizedCaseInsensitiveContains(searchText)
         }
     }
 
@@ -74,13 +99,25 @@ struct PickerView: View {
             VStack(spacing: 0) {
                 // Header
                 HStack(spacing: 8) {
-                    // Session timer badge
-                    SessionTimerBadge()
+                    // Tab switcher
+                    HStack(spacing: 0) {
+                        pickerTabButton(.clipboard, icon: "doc.on.clipboard", label: "Clipboard")
+                        pickerTabButton(.snippets, icon: "text.quote", label: "Snippets")
+                    }
+                    .background(Theme.badgeFill, in: Capsule())
 
-                    // Item count badge
-                    Text("\(manager.items.count) item\(manager.items.count == 1 ? "" : "s")")
-                        .font(Theme.Typography.metadata)
-                        .foregroundStyle(Theme.metadataText)
+                    if snippetSavedFlash {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 9, weight: .bold))
+                            Text("Saved")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundColor(.orange)
+                        .transition(.opacity)
+                    } else if activeTab == .clipboard {
+                        SessionTimerBadge()
+                    }
 
                     Spacer()
 
@@ -110,21 +147,23 @@ struct PickerView: View {
                     }
                     .buttonStyle(.plain)
 
-                    // Clear all button
-                    Button(action: {
-                        withAnimation(.spring(response: 0.3)) {
-                            manager.clearAll()
+                    if activeTab == .clipboard {
+                        // Clear all button
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3)) {
+                                manager.clearAll()
+                            }
+                            onDismiss()
+                        }) {
+                            Label("Clear", systemImage: "trash")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Theme.badgeFill, in: Capsule())
                         }
-                        onDismiss()
-                    }) {
-                        Label("Clear", systemImage: "trash")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Theme.badgeFill, in: Capsule())
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
 
                     // Close button
                     Button(action: { onDismiss() }) {
@@ -173,125 +212,11 @@ struct PickerView: View {
                 Divider()
                     .opacity(0.5)
 
-                // Items list
-                ScrollViewReader { proxy in
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(spacing: Theme.Spacing.itemGap) {
-                            // Pinned favorites section
-                            if !manager.pinnedItems.isEmpty && searchText.isEmpty {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "pin.fill")
-                                        .font(.system(size: 9))
-                                        .rotationEffect(.degrees(45))
-                                    Text("Favorites")
-                                        .font(.system(size: 11, weight: .medium))
-                                }
-                                .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 14)
-                                .padding(.top, 2)
-
-                                ForEach(manager.pinnedItems) { snippet in
-                                    PinnedItemRow(
-                                        snippet: snippet,
-                                        onSelect: {
-                                            onSelect(ClipboardItem(content: snippet.content))
-                                        },
-                                        onUnpin: {
-                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                                manager.unpinItem(snippet)
-                                            }
-                                        }
-                                    )
-                                }
-
-                                Divider().opacity(0.3)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 2)
-                            }
-
-                            ForEach(Array(filteredItems.enumerated()), id: \.element.id) { index, item in
-                                ClipboardItemRow(
-                                    item: item,
-                                    index: index,
-                                    isHighlighted: hoveredId == item.id || (navState.selectedIndex == index && hoveredId == nil),
-                                    isSelected: selectedIds.contains(item.id),
-                                    isMultiSelectMode: isMultiSelectMode,
-                                    isPinned: !item.isImage && !item.isFile && manager.isPinned(content: item.content),
-                                    onSelect: {
-                                        if isMultiSelectMode {
-                                            toggleSelection(item.id)
-                                        } else {
-                                            onSelect(item)
-                                        }
-                                    },
-                                    onToggleSelect: {
-                                        toggleSelection(item.id)
-                                    },
-                                    onDelete: {
-                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                            selectedIds.remove(item.id)
-                                            manager.remove(item: item)
-                                        }
-                                    },
-                                    onPin: {
-                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                            if manager.isPinned(content: item.content) {
-                                                if let pin = manager.pinnedItems.first(where: { $0.content == item.content }) {
-                                                    manager.unpinItem(pin)
-                                                }
-                                            } else {
-                                                manager.pinItem(content: item.content)
-                                            }
-                                        }
-                                    }
-                                )
-                                .id(item.id)
-                                .onHover { hovering in
-                                    hoveredId = hovering ? item.id : nil
-                                    if hovering {
-                                        navState.selectedIndex = index
-                                    }
-                                }
-                                .transition(.opacity)
-                            }
-
-                            if filteredItems.isEmpty && !manager.items.isEmpty {
-                                VStack(spacing: 8) {
-                                    Image(systemName: "magnifyingglass")
-                                        .font(.system(size: 24))
-                                        .foregroundStyle(Theme.metadataText)
-                                    Text("No results")
-                                        .font(Theme.Typography.body)
-                                        .foregroundStyle(Theme.metadataText)
-                                }
-                                .padding(.vertical, 24)
-                            } else if manager.items.isEmpty {
-                                VStack(spacing: 10) {
-                                    Image(systemName: "doc.on.clipboard")
-                                        .font(.system(size: 28))
-                                        .foregroundStyle(Theme.metadataText)
-                                    Text("Nothing copied yet")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundStyle(Theme.subtleText)
-                                    Text("Copy something with ⌘C to get started")
-                                        .font(Theme.Typography.caption)
-                                        .foregroundStyle(Theme.metadataText)
-                                }
-                                .padding(.vertical, 32)
-                            }
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                    }
-                    .onChange(of: navState.selectedIndex) { newIndex in
-                        guard navState.scrollOnChange else { return }
-                        navState.scrollOnChange = false
-                        guard newIndex >= 0, newIndex < filteredItems.count else { return }
-                        withAnimation(.easeInOut(duration: 0.15)) {
-                            proxy.scrollTo(filteredItems[newIndex].id, anchor: .center)
-                        }
-                    }
+                // Content — tab-switched
+                if activeTab == .clipboard {
+                    clipboardContent
+                } else {
+                    snippetsContent
                 }
 
                 // Footer — switches between normal hints and multi-select bar
@@ -370,6 +295,104 @@ struct PickerView: View {
                 }
             }
         }
+        .overlay {
+            // Save as snippet editor overlay
+            if showSaveSnippetEditor {
+                ZStack {
+                    Color.black.opacity(0.3)
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.window, style: .continuous))
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                showSaveSnippetEditor = false
+                            }
+                        }
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Image(systemName: "text.quote")
+                                .font(.system(size: 14))
+                                .foregroundColor(.orange)
+                            Text("Save as Snippet")
+                                .font(.system(size: 14, weight: .semibold))
+                            Spacer()
+                        }
+
+                        TextField("Snippet name", text: $saveSnippetTitle)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 13))
+                            .padding(10)
+                            .background(Theme.inputBackground, in: RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous))
+
+                        ZStack(alignment: .topLeading) {
+                            if saveSnippetContent.isEmpty {
+                                Text("Content...")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Theme.metadataText)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 10)
+                                    .allowsHitTesting(false)
+                            }
+                            TextEditor(text: $saveSnippetContent)
+                                .font(.system(size: 12))
+                                .scrollContentBackground(.hidden)
+                                .padding(6)
+                        }
+                        .frame(minHeight: 80, maxHeight: 140)
+                        .background(Theme.inputBackground, in: RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous))
+
+                        HStack(spacing: 8) {
+                            Spacer()
+                            Button("Cancel") {
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    showSaveSnippetEditor = false
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+
+                            Button("Save Snippet") {
+                                let title = saveSnippetTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                                let content = saveSnippetContent.trimmingCharacters(in: .whitespacesAndNewlines)
+                                guard !content.isEmpty else { return }
+                                let finalTitle = title.isEmpty ? String(content.prefix(50)) : title
+                                manager.addSnippet(title: finalTitle, content: content)
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    showSaveSnippetEditor = false
+                                }
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    snippetSavedFlash = true
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        snippetSavedFlash = false
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 6)
+                            .background(Color.accentColor, in: Capsule())
+                            .disabled(saveSnippetContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+                    }
+                    .padding(20)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(.windowBackgroundColor))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(Theme.cardBorder, lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.2), radius: 16, x: 0, y: 4)
+                    .padding(24)
+                }
+                .transition(.opacity)
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.window, style: .continuous))
         .onAppear {
             withAnimation {
@@ -407,6 +430,314 @@ struct PickerView: View {
         }
     }
 
+    // MARK: - Tab Button
+
+    @ViewBuilder
+    func pickerTabButton(_ tab: PickerTab, icon: String, label: String) -> some View {
+        let isActive = activeTab == tab
+        Button(action: {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                activeTab = tab
+                searchText = ""
+            }
+        }) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 10))
+                Text(label)
+                    .font(.system(size: 11, weight: isActive ? .semibold : .medium))
+            }
+            .foregroundStyle(isActive ? Color.white : .secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(isActive ? Color.accentColor : Color.clear, in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Clipboard Tab Content
+
+    var clipboardContent: some View {
+        ScrollViewReader { proxy in
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: Theme.Spacing.itemGap) {
+                    // Pinned section (temporary quick pins)
+                    if !filteredPins.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "pin.fill")
+                                .font(.system(size: 9))
+                                .rotationEffect(.degrees(45))
+                            Text("Pinned")
+                                .font(.system(size: 11, weight: .medium))
+
+                            Spacer()
+
+                            Text("\(filteredPins.count)")
+                                .font(Theme.Typography.metadata)
+                                .foregroundStyle(Theme.metadataText)
+                        }
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 14)
+                        .padding(.top, 2)
+
+                        ForEach(filteredPins) { pin in
+                            QuickPinRow(
+                                pin: pin,
+                                onSelect: {
+                                    onSelect(ClipboardItem(content: pin.content))
+                                },
+                                onUnpin: {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        manager.unpinQuickPin(pin)
+                                    }
+                                }
+                            )
+                        }
+
+                        Divider().opacity(0.3)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 2)
+                    }
+
+                    ForEach(Array(filteredItems.enumerated()), id: \.element.id) { index, item in
+                        ClipboardItemRow(
+                            item: item,
+                            index: index,
+                            isHighlighted: hoveredId == item.id || (navState.selectedIndex == index && hoveredId == nil),
+                            isSelected: selectedIds.contains(item.id),
+                            isMultiSelectMode: isMultiSelectMode,
+                            isPinned: !item.isImage && !item.isFile && manager.isPinned(content: item.content),
+                            onSelect: {
+                                if isMultiSelectMode {
+                                    toggleSelection(item.id)
+                                } else {
+                                    onSelect(item)
+                                }
+                            },
+                            onToggleSelect: {
+                                toggleSelection(item.id)
+                            },
+                            onDelete: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    selectedIds.remove(item.id)
+                                    manager.remove(item: item)
+                                }
+                            },
+                            onPin: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    if manager.isPinned(content: item.content) {
+                                        if let pin = manager.quickPins.first(where: { $0.content == item.content }) {
+                                            manager.unpinQuickPin(pin)
+                                        }
+                                    } else {
+                                        manager.pinItem(content: item.content)
+                                    }
+                                }
+                            },
+                            onSaveSnippet: {
+                                saveSnippetTitle = String(item.content.prefix(50)).trimmingCharacters(in: .whitespacesAndNewlines)
+                                saveSnippetContent = item.content
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    showSaveSnippetEditor = true
+                                }
+                            }
+                        )
+                        .id(item.id)
+                        .onHover { hovering in
+                            hoveredId = hovering ? item.id : nil
+                            if hovering {
+                                navState.selectedIndex = index
+                            }
+                        }
+                        .transition(.opacity)
+                    }
+
+                    if filteredItems.isEmpty && !manager.items.isEmpty {
+                        VStack(spacing: 8) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 24))
+                                .foregroundStyle(Theme.metadataText)
+                            Text("No results")
+                                .font(Theme.Typography.body)
+                                .foregroundStyle(Theme.metadataText)
+                        }
+                        .padding(.vertical, 24)
+                    } else if manager.items.isEmpty {
+                        VStack(spacing: 10) {
+                            Image(systemName: "doc.on.clipboard")
+                                .font(.system(size: 28))
+                                .foregroundStyle(Theme.metadataText)
+                            Text("Nothing copied yet")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Theme.subtleText)
+                            Text("Copy something with ⌘C to get started")
+                                .font(Theme.Typography.caption)
+                                .foregroundStyle(Theme.metadataText)
+                        }
+                        .padding(.vertical, 32)
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+            }
+            .onChange(of: navState.selectedIndex) { newIndex in
+                guard navState.scrollOnChange else { return }
+                navState.scrollOnChange = false
+                guard newIndex >= 0, newIndex < filteredItems.count else { return }
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    proxy.scrollTo(filteredItems[newIndex].id, anchor: .center)
+                }
+            }
+        }
+    }
+
+    // MARK: - Snippets Tab Content
+
+    var snippetsContent: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: Theme.Spacing.itemGap) {
+                // Inline add form
+                if isAddingSnippetInline {
+                    VStack(alignment: .leading, spacing: 6) {
+                        TextField("Name", text: $inlineSnippetTitle)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 12))
+                            .padding(8)
+                            .background(Theme.inputBackground, in: RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous))
+
+                        ZStack(alignment: .topLeading) {
+                            if inlineSnippetContent.isEmpty {
+                                Text("Content...")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Theme.metadataText)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 8)
+                                    .allowsHitTesting(false)
+                            }
+                            TextEditor(text: $inlineSnippetContent)
+                                .font(.system(size: 12))
+                                .scrollContentBackground(.hidden)
+                                .padding(4)
+                        }
+                        .frame(minHeight: 50, maxHeight: 80)
+                        .background(Theme.inputBackground, in: RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous))
+
+                        HStack(spacing: 6) {
+                            Spacer()
+                            Button("Cancel") {
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    isAddingSnippetInline = false
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+
+                            Button("Save") {
+                                let title = inlineSnippetTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                                let content = inlineSnippetContent.trimmingCharacters(in: .whitespacesAndNewlines)
+                                guard !content.isEmpty else { return }
+                                let finalTitle = title.isEmpty ? String(content.prefix(50)) : title
+                                manager.addSnippet(title: finalTitle, content: content)
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    isAddingSnippetInline = false
+                                    inlineSnippetTitle = ""
+                                    inlineSnippetContent = ""
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Color.accentColor, in: Capsule())
+                            .disabled(inlineSnippetContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+                    }
+                    .padding(10)
+                    .background(
+                        RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous)
+                            .fill(Theme.cardBackground)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous)
+                            .strokeBorder(Color.accentColor.opacity(0.3), lineWidth: 1)
+                    )
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+
+                ForEach(filteredSnippets) { snippet in
+                    SnippetRow(
+                        snippet: snippet,
+                        onSelect: {
+                            onSelect(ClipboardItem(content: snippet.content))
+                        },
+                        onRemove: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                manager.removeSnippet(snippet)
+                            }
+                        }
+                    )
+                }
+
+                // Add button
+                if !isAddingSnippetInline {
+                    Button(action: {
+                        inlineSnippetTitle = ""
+                        inlineSnippetContent = ""
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            isAddingSnippetInline = true
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Add Snippet")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(.accentColor)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: Theme.Radius.button, style: .continuous)
+                                .strokeBorder(Color.accentColor.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [4]))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if filteredSnippets.isEmpty && !manager.pinnedItems.isEmpty && !isAddingSnippetInline {
+                    VStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 24))
+                            .foregroundStyle(Theme.metadataText)
+                        Text("No matching snippets")
+                            .font(Theme.Typography.body)
+                            .foregroundStyle(Theme.metadataText)
+                    }
+                    .padding(.vertical, 24)
+                } else if manager.pinnedItems.isEmpty && !isAddingSnippetInline {
+                    VStack(spacing: 10) {
+                        Image(systemName: "text.quote")
+                            .font(.system(size: 28))
+                            .foregroundStyle(Theme.metadataText)
+                        Text("No snippets yet")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Theme.subtleText)
+                        Text("Tap + above or save from clipboard")
+                            .font(Theme.Typography.caption)
+                            .foregroundStyle(Theme.metadataText)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.vertical, 32)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+        }
+    }
+
     @ViewBuilder
     func footerHint(icon: String, text: String) -> some View {
         HStack(spacing: 3) {
@@ -430,6 +761,7 @@ struct ClipboardItemRow: View {
     var onToggleSelect: () -> Void
     var onDelete: () -> Void
     var onPin: () -> Void
+    var onSaveSnippet: (() -> Void)? = nil
 
     @State private var showDelete = false
 
@@ -513,6 +845,14 @@ struct ClipboardItemRow: View {
                             color: isPinned ? .accentColor : .secondary,
                             rotation: 45
                         ) { onPin() }
+
+                        // Save as snippet
+                        if let onSaveSnippet = onSaveSnippet {
+                            actionButton(
+                                icon: "text.quote",
+                                color: .orange
+                            ) { onSaveSnippet() }
+                        }
                     }
 
                     actionButton(icon: "doc.on.doc", color: .secondary) { onSelect() }
@@ -695,10 +1035,10 @@ struct ClipboardItemRow: View {
 }
 
 
-// MARK: - Pinned Item Row
+// MARK: - Quick Pin Row (temporary pin)
 
-struct PinnedItemRow: View {
-    let snippet: PinnedSnippet
+struct QuickPinRow: View {
+    let pin: QuickPin
     var onSelect: () -> Void
     var onUnpin: () -> Void
 
@@ -711,11 +1051,11 @@ struct PinnedItemRow: View {
                 .foregroundColor(.accentColor)
                 .rotationEffect(.degrees(45))
 
-            Text(snippet.title)
+            Text(String(pin.content.prefix(80)).trimmingCharacters(in: .whitespacesAndNewlines))
                 .font(.system(size: 12))
                 .lineLimit(1)
                 .foregroundColor(.primary.opacity(0.85))
-                .help(snippet.content.count > 50 ? String(snippet.content.prefix(500)) : "")
+                .help(pin.content.count > 50 ? String(pin.content.prefix(500)) : "")
 
             Spacer()
 
@@ -723,6 +1063,63 @@ struct PinnedItemRow: View {
                 Button(action: onUnpin) {
                     Image(systemName: "pin.slash.fill")
                         .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .transition(.opacity)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.Radius.button, style: .continuous)
+                .fill(isHovered ? Theme.rowHover : Color.clear)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.button, style: .continuous))
+        .onHover { isHovered = $0 }
+        .onTapGesture { onSelect() }
+        .onDrag {
+            NSItemProvider(object: pin.content as NSString)
+        }
+    }
+}
+
+// MARK: - Snippet Row (permanent named template)
+
+struct SnippetRow: View {
+    let snippet: PinnedSnippet
+    var onSelect: () -> Void
+    var onRemove: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "text.quote")
+                .font(.system(size: 10))
+                .foregroundColor(.orange)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(snippet.title)
+                    .font(.system(size: 12, weight: .medium))
+                    .lineLimit(1)
+                    .foregroundColor(.primary.opacity(0.85))
+
+                if snippet.title != String(snippet.content.prefix(50)).trimmingCharacters(in: .whitespacesAndNewlines) {
+                    Text(String(snippet.content.prefix(60)))
+                        .font(.system(size: 10))
+                        .lineLimit(1)
+                        .foregroundStyle(Theme.metadataText)
+                }
+            }
+            .help(snippet.content.count > 50 ? String(snippet.content.prefix(500)) : "")
+
+            Spacer()
+
+            if isHovered {
+                Button(action: onRemove) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)

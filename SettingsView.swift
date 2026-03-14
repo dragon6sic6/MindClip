@@ -5,12 +5,13 @@ import Sparkle
 // MARK: - Settings Tab Enum
 
 enum SettingsTab: String, CaseIterable {
-    case general, picker, history, shortcuts, updates, about
+    case general, picker, snippets, history, shortcuts, updates, about
 
     var label: String {
         switch self {
         case .general: return "General"
         case .picker: return "Picker"
+        case .snippets: return "Snippets"
         case .history: return "History"
         case .shortcuts: return "Shortcuts"
         case .updates: return "Updates"
@@ -22,6 +23,7 @@ enum SettingsTab: String, CaseIterable {
         switch self {
         case .general: return "gearshape"
         case .picker: return "rectangle.on.rectangle"
+        case .snippets: return "text.quote"
         case .history: return "clock.arrow.circlepath"
         case .shortcuts: return "keyboard"
         case .updates: return "arrow.triangle.2.circlepath"
@@ -38,6 +40,10 @@ struct SettingsView: View {
     @State private var selectedDuration: DurationOption = .thirtyMinutes
     @State private var customMinutes: Int = 30
     @State private var showClearHistoryConfirm = false
+    @State private var editingSnippetId: UUID? = nil
+    @State private var snippetTitle: String = ""
+    @State private var snippetContent: String = ""
+    @State private var isAddingSnippet: Bool = false
     private let updater: SPUUpdater
 
     init(updater: SPUUpdater) {
@@ -95,6 +101,7 @@ struct SettingsView: View {
                     switch selectedTab {
                     case .general: generalContent()
                     case .picker: pickerContent()
+                    case .snippets: snippetsContent()
                     case .history: historyContent()
                     case .shortcuts: shortcutsContent()
                     case .updates: updatesContent()
@@ -355,6 +362,231 @@ struct SettingsView: View {
         .themeCard()
     }
 
+    // MARK: - Snippets Tab
+
+    @ViewBuilder
+    func snippetsContent() -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                sectionHeader("Snippets")
+                Spacer()
+                Text("\(manager.pinnedItems.count) saved")
+                    .font(Theme.Typography.metadata)
+                    .foregroundStyle(Theme.metadataText)
+            }
+
+            Text("Text you paste often — always available in the picker, across sessions and restarts.")
+                .font(Theme.Typography.settingsDescription)
+                .foregroundStyle(.secondary)
+
+            // Add / Edit form
+            if isAddingSnippet || editingSnippetId != nil {
+                snippetEditor()
+            }
+
+            // Snippet list
+            if manager.pinnedItems.isEmpty && !isAddingSnippet {
+                VStack(spacing: 8) {
+                    Image(systemName: "text.quote")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Theme.metadataText)
+                    Text("No snippets yet")
+                        .font(Theme.Typography.body)
+                        .foregroundStyle(Theme.metadataText)
+                    Text("Add frequently used text like emails, addresses, or templates")
+                        .font(Theme.Typography.caption)
+                        .foregroundStyle(Theme.metadataText)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+            } else if !manager.pinnedItems.isEmpty {
+                VStack(spacing: 4) {
+                    ForEach(manager.pinnedItems) { snippet in
+                        snippetRow(snippet)
+                    }
+                    .onMove { source, destination in
+                        manager.reorderSnippets(from: source, to: destination)
+                    }
+                }
+            }
+
+            // Add button
+            if !isAddingSnippet && editingSnippetId == nil {
+                Button(action: {
+                    snippetTitle = ""
+                    snippetContent = ""
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isAddingSnippet = true
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text("Add Snippet")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(.accentColor)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: Theme.Radius.button, style: .continuous)
+                            .fill(Color.accentColor.opacity(0.1))
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .themeCard()
+    }
+
+    @ViewBuilder
+    func snippetEditor() -> some View {
+        let isEditing = editingSnippetId != nil
+
+        VStack(alignment: .leading, spacing: 8) {
+            Text(isEditing ? "Edit Snippet" : "New Snippet")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+
+            TextField("Name", text: $snippetTitle)
+                .textFieldStyle(.plain)
+                .font(Theme.Typography.body)
+                .padding(8)
+                .background(Theme.inputBackground, in: RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous))
+
+            ZStack(alignment: .topLeading) {
+                if snippetContent.isEmpty {
+                    Text("Content to paste...")
+                        .font(Theme.Typography.body)
+                        .foregroundStyle(Theme.metadataText)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 8)
+                        .allowsHitTesting(false)
+                }
+                TextEditor(text: $snippetContent)
+                    .font(Theme.Typography.body)
+                    .scrollContentBackground(.hidden)
+                    .padding(4)
+            }
+            .frame(minHeight: 60, maxHeight: 120)
+            .background(Theme.inputBackground, in: RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous))
+
+            HStack(spacing: 8) {
+                Spacer()
+                Button("Cancel") {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isAddingSnippet = false
+                        editingSnippetId = nil
+                    }
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+
+                Button(isEditing ? "Save" : "Add") {
+                    let trimmedTitle = snippetTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let trimmedContent = snippetContent.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmedContent.isEmpty else { return }
+                    let finalTitle = trimmedTitle.isEmpty ? String(trimmedContent.prefix(50)) : trimmedTitle
+
+                    if let editId = editingSnippetId {
+                        manager.updateSnippet(id: editId, title: finalTitle, content: trimmedContent)
+                    } else {
+                        manager.addSnippet(title: finalTitle, content: trimmedContent)
+                    }
+
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isAddingSnippet = false
+                        editingSnippetId = nil
+                    }
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .background(Color.accentColor, in: Capsule())
+                .disabled(snippetContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous)
+                .fill(Theme.cardBackground)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous)
+                .strokeBorder(Color.accentColor.opacity(0.3), lineWidth: 1)
+        )
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
+    @ViewBuilder
+    func snippetRow(_ snippet: PinnedSnippet) -> some View {
+        let isEditing = editingSnippetId == snippet.id
+
+        HStack(spacing: 10) {
+            // Drag handle
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 10))
+                .foregroundStyle(Theme.metadataText)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(snippet.title)
+                    .font(.system(size: 12, weight: .medium))
+                    .lineLimit(1)
+
+                Text(snippet.content)
+                    .font(Theme.Typography.caption)
+                    .foregroundStyle(Theme.metadataText)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            // Edit button
+            Button(action: {
+                snippetTitle = snippet.title
+                snippetContent = snippet.content
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isAddingSnippet = false
+                    editingSnippetId = snippet.id
+                }
+            }) {
+                Image(systemName: "pencil")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 26, height: 26)
+                    .background(Theme.badgeFill, in: RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous))
+            }
+            .buttonStyle(.plain)
+
+            // Delete button
+            Button(action: {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    if editingSnippetId == snippet.id {
+                        editingSnippetId = nil
+                    }
+                    manager.removeSnippet(snippet)
+                }
+            }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 26, height: 26)
+                    .background(Theme.badgeFill, in: RoundedRectangle(cornerRadius: Theme.Radius.badge, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.Radius.button, style: .continuous)
+                .fill(isEditing ? Theme.rowSelected : Theme.badgeFill)
+        )
+    }
+
     // MARK: - Shortcuts Tab
 
     @ViewBuilder
@@ -371,6 +603,7 @@ struct SettingsView: View {
                 shortcutRow(icon: "arrow.up.arrow.down", text: "Navigate", shortcut: "↑↓")
                 shortcutRow(icon: "checkmark.square", text: "Multi-select", shortcut: "⌘ Click")
                 shortcutRow(icon: "checkmark.rectangle.stack", text: "Select all", shortcut: "⌘A")
+                shortcutRow(icon: "arrow.triangle.merge", text: "Merge selected", shortcut: "⌘M")
                 shortcutRow(icon: "arrow.up.doc.on.clipboard", text: "Paste selected", shortcut: "⌘ Enter")
                 shortcutRow(icon: "escape", text: "Dismiss", shortcut: "Esc")
             }

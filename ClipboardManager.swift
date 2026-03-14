@@ -25,19 +25,45 @@ enum AppearanceMode: String, CaseIterable {
     }
 }
 
-// MARK: - Pinned Favorites (persistent across sessions)
+// MARK: - Quick Pins (temporary, session-scoped bookmarks)
+
+struct QuickPin: Identifiable, Codable, Equatable {
+    let id: UUID
+    let content: String
+    let pinnedAt: Date
+
+    init(content: String) {
+        self.id = UUID()
+        self.content = content
+        self.pinnedAt = Date()
+    }
+}
+
+// MARK: - Snippets (permanent, named, editable text templates)
 
 struct PinnedSnippet: Identifiable, Codable, Equatable {
     let id: UUID
     var title: String
     var content: String
     let createdAt: Date
+    var sortOrder: Int
 
-    init(content: String) {
+    init(content: String, title: String? = nil, sortOrder: Int = 0) {
         self.id = UUID()
-        self.title = String(content.prefix(50)).trimmingCharacters(in: .whitespacesAndNewlines)
+        self.title = title ?? String(content.prefix(50)).trimmingCharacters(in: .whitespacesAndNewlines)
         self.content = content
         self.createdAt = Date()
+        self.sortOrder = sortOrder
+    }
+
+    // Backward compatible decoding — old data won't have sortOrder
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        content = try container.decode(String.self, forKey: .content)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        sortOrder = try container.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
     }
 }
 
@@ -185,6 +211,7 @@ class ClipboardManager: ObservableObject {
     static let shared = ClipboardManager()
 
     @Published var items: [ClipboardItem] = []
+    @Published var quickPins: [QuickPin] = []
     @Published var pinnedItems: [PinnedSnippet] = []
     @Published var sessionDuration: TimeInterval = 1800 // 30 minutes default
     @Published var maxRemember: Int = 50
@@ -201,6 +228,7 @@ class ClipboardManager: ObservableObject {
 
     private init() {
         loadSettings()
+        loadQuickPins()
         loadPinnedItems()
         loadMenuBarHistory()
         startPolling()
@@ -498,6 +526,8 @@ class ClipboardManager: ObservableObject {
     func clearAll() {
         DispatchQueue.main.async {
             self.items.removeAll()
+            self.quickPins.removeAll()
+            self.saveQuickPins()
         }
         resetSessionTimer()
     }
@@ -698,33 +728,72 @@ class ClipboardManager: ObservableObject {
         }
     }
 
-    // MARK: - Pinned Favorites
+    // MARK: - Quick Pins (temporary session bookmarks)
+
+    func loadQuickPins() {
+        guard let data = UserDefaults.standard.data(forKey: "quickPins"),
+              let pins = try? JSONDecoder().decode([QuickPin].self, from: data) else { return }
+        quickPins = pins
+    }
+
+    func saveQuickPins() {
+        guard let data = try? JSONEncoder().encode(quickPins) else { return }
+        UserDefaults.standard.set(data, forKey: "quickPins")
+    }
+
+    func pinItem(content: String) {
+        guard !quickPins.contains(where: { $0.content == content }) else { return }
+        let pin = QuickPin(content: content)
+        quickPins.insert(pin, at: 0)
+        saveQuickPins()
+    }
+
+    func unpinQuickPin(_ pin: QuickPin) {
+        quickPins.removeAll { $0.id == pin.id }
+        saveQuickPins()
+    }
+
+    func isPinned(content: String) -> Bool {
+        quickPins.contains { $0.content == content }
+    }
+
+    // MARK: - Snippets (permanent named templates)
 
     func loadPinnedItems() {
         guard let data = UserDefaults.standard.data(forKey: "pinnedItems"),
               let items = try? JSONDecoder().decode([PinnedSnippet].self, from: data) else { return }
-        pinnedItems = items
+        pinnedItems = items.sorted { $0.sortOrder < $1.sortOrder }
     }
 
     func savePinnedItems() {
+        for i in pinnedItems.indices {
+            pinnedItems[i].sortOrder = i
+        }
         guard let data = try? JSONEncoder().encode(pinnedItems) else { return }
         UserDefaults.standard.set(data, forKey: "pinnedItems")
     }
 
-    func pinItem(content: String) {
-        guard !pinnedItems.contains(where: { $0.content == content }) else { return }
-        let snippet = PinnedSnippet(content: content)
-        pinnedItems.insert(snippet, at: 0)
+    func addSnippet(title: String, content: String) {
+        let snippet = PinnedSnippet(content: content, title: title, sortOrder: pinnedItems.count)
+        pinnedItems.append(snippet)
         savePinnedItems()
     }
 
-    func unpinItem(_ snippet: PinnedSnippet) {
+    func updateSnippet(id: UUID, title: String, content: String) {
+        guard let index = pinnedItems.firstIndex(where: { $0.id == id }) else { return }
+        pinnedItems[index].title = title
+        pinnedItems[index].content = content
+        savePinnedItems()
+    }
+
+    func removeSnippet(_ snippet: PinnedSnippet) {
         pinnedItems.removeAll { $0.id == snippet.id }
         savePinnedItems()
     }
 
-    func isPinned(content: String) -> Bool {
-        pinnedItems.contains { $0.content == content }
+    func reorderSnippets(from source: IndexSet, to destination: Int) {
+        pinnedItems.move(fromOffsets: source, toOffset: destination)
+        savePinnedItems()
     }
 
     // MARK: - Merge Items

@@ -5,6 +5,24 @@
         <description>Most recent changes with links to updates.</description>
         <language>en</language>
         <item>
+            <title>1.7.0</title>
+            <pubDate>Fri, 14 Mar 2026 22:00:00 +0100</pubDate>
+            <sparkle:version>11</sparkle:version>
+            <sparkle:shortVersionString>1.7.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>What's New in 1.7.0</h3>
+                <ul>
+                    <li>Snippets — save reusable text with custom names in a dedicated Snippets tab</li>
+                    <li>Quick Pins — temporarily pin items to the top of the clipboard list</li>
+                    <li>Create snippets directly from the clipboard picker with an inline editor</li>
+                    <li>Tab switcher in the picker: Clipboard | Snippets</li>
+                    <li>Larger, resizable picker window</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/dragon6sic6/MindClip/releases/download/v1.7.0/MindClip.dmg" length="2643003" type="application/octet-stream" sparkle:edSignature="wf+EiqB5utc4Vyoe2qsmWAaufZnP9pJmBuEPw7HGmJQouuj6z0eZ8pzne0SphhvegWoK1w7JnzMM5ZNfgVeEBA=="/>
+        </item>
+        <item>
             <title>1.6.0</title>
             <pubDate>Fri, 14 Mar 2026 18:00:00 +0100</pubDate>
             <sparkle:version>10</sparkle:version>

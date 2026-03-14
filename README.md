@@ -20,7 +20,9 @@ Built by **Mindact**.
 - **Screenshot capture** - Automatically detects new screenshots (⌘⇧4 / ⌘⇧3) and adds them to history
 - **Image support** - Copies of images, screenshots, and photos all appear in the picker with thumbnails
 - **Quick picker** - Hold `⌘V` to browse and select from history
-- **Pinned favorites** - Pin frequently used snippets so they persist across sessions
+- **Quick pins** - Temporarily pin items to the top of the picker for easy access during your session
+- **Snippets** - Save reusable text snippets with custom names, accessible from a dedicated Snippets tab in the picker
+- **Merge items** - Select multiple clipboard items and merge them into one (`⌘M`)
 - **Drag & drop** - Drag any item from the picker directly into another app
 - **Keyboard navigation** - Arrow keys to navigate, Enter to paste, 1-9 for quick paste
 - **Paste as plain text** - `⇧⌘V` strips formatting and pastes clean text
@@ -70,6 +72,9 @@ You may also want to remove MindClip from **System Settings > Privacy & Security
 | Quick paste | `1` - `9` (while picker is open) |
 | Paste as plain text | `⇧⌘V` |
 | Navigate items | `↑` `↓` |
+| Select all items | `⌘A` |
+| Merge selected | `⌘M` |
+| Paste selected items | `⌘Enter` |
 | Dismiss picker | `Esc` |
 
 ## Settings

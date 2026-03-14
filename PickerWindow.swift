@@ -52,8 +52,8 @@ class PickerWindow: NSObject {
         self.hostingView = hosting
 
         let win = KeyableWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 560, height: 420),
-            styleMask: [.borderless, .fullSizeContentView],
+            contentRect: NSRect(x: 0, y: 0, width: 620, height: 520),
+            styleMask: [.borderless, .fullSizeContentView, .resizable],
             backing: .buffered,
             defer: false
         )
@@ -66,6 +66,8 @@ class PickerWindow: NSObject {
         win.hasShadow = true
         win.ignoresMouseEvents = false
         win.collectionBehavior = [.canJoinAllSpaces, .stationary]
+        win.minSize = NSSize(width: 480, height: 360)
+        win.maxSize = NSSize(width: 900, height: 800)
 
         self.window = win
     }
@@ -91,11 +93,11 @@ class PickerWindow: NSObject {
         })
         hostingView?.rootView = pickerView
 
-        // Center on screen
+        // Center on screen with generous default size
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame
-            let winWidth: CGFloat = 560
-            let winHeight: CGFloat = min(CGFloat(ClipboardManager.shared.items.count) * 72 + 100, 500)
+            let winWidth: CGFloat = 620
+            let winHeight: CGFloat = min(max(CGFloat(ClipboardManager.shared.items.count) * 72 + 120, 520), 600)
             let x = screenFrame.midX - winWidth / 2
             let y = screenFrame.midY - winHeight / 2
             window?.setFrame(NSRect(x: x, y: y, width: winWidth, height: winHeight), display: true)
