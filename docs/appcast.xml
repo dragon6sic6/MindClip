@@ -5,6 +5,20 @@
         <description>Most recent changes with links to updates.</description>
         <language>en</language>
         <item>
+            <title>1.8.1</title>
+            <pubDate>Fri, 14 Mar 2026 18:30:00 +0100</pubDate>
+            <sparkle:version>17</sparkle:version>
+            <sparkle:shortVersionString>1.8.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>What's New in 1.8.1</h3>
+                <ul>
+                    <li>Dark/light mode toggle — switch appearance directly from the picker header</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/dragon6sic6/MindClip/releases/download/v1.8.1/MindClip.dmg" length="2749555" type="application/octet-stream" sparkle:edSignature="0ZoRN1DGV4RS4onkkJ4VEFs6fjrM7TxmIcCk7oW87c0wyFZo5Rkh1BK0GaeJo6VHw/5LT164RyDusWgS+cDsCA=="/>
+        </item>
+        <item>
             <title>1.8.0</title>
             <pubDate>Fri, 14 Mar 2026 17:30:00 +0100</pubDate>
             <sparkle:version>16</sparkle:version>
